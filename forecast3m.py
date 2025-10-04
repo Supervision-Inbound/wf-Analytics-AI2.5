@@ -5,9 +5,9 @@ y guarda JSON/CSV con columnas:
   - fecha, hora, llamadas_recibidas, tmo_pred_seg, ejecutivos_requeridos
 
 Lee:
-  - model-lgb.pkl
+  - model_lgb.pkl / model-lgb.pkl
   - features.json
-  - Data/Hosting ia.xlsx (histórico para seed de lags)
+  - data/Hosting ia.xlsx (o Data/Hosting ia.xlsx)
 Escribe:
   - public/forecast_3m.json
   - public/forecast_3m.csv
@@ -19,43 +19,88 @@ import pandas as pd
 from datetime import datetime, timedelta
 import joblib
 
-from erlangutil import required_agents_erlang_c
+# ---------------- Erlang-C ----------------
+def erlang_c_prob_wait(N: int, A: float) -> float:
+    if A <= 0: return 0.0
+    if N <= 0: return 1.0
+    if A >= N: return 1.0
+    summ = 0.0
+    term = 1.0
+    for k in range(1, N):
+        summ += term
+        term *= A / k
+    summ += term
+    pn = term * (A / N) / (1.0 - (A / N))
+    return float(pn / (summ + pn))
 
-# ==========================
-# Parámetros (ajustados a tus nombres)
-# ==========================
-DATA_PATHS     = ["./Data/Hosting ia.xlsx", "./Hosting ia.xlsx"]
-MODEL_PATH     = "./model-lgb.pkl"
-FEATS_PATH     = "./features.json"
-METRICS_PATH   = "./trimetrics.json"        # usaremos tu nombre de archivo
-PUBLIC_DIR     = "./public"
-OUTPUT_JSON    = f"{PUBLIC_DIR}/forecast_3m.json"
-OUTPUT_CSV     = f"{PUBLIC_DIR}/forecast_3m.csv"
+def service_level(N: int, A: float, AHT_sec: float, ASA_target_sec: float) -> float:
+    if A <= 0: return 1.0
+    if N <= 0: return 0.0
+    P_w = 1.0 if A >= N else erlang_c_prob_wait(N, A)
+    expo = - (N - A) * (ASA_target_sec / max(AHT_sec, 1e-9))
+    return 1.0 - P_w * np.exp(expo)
 
-TARGET_COL     = "recibidos"                # mismo objetivo usado al entrenar
-TMO_COL_OPT    = "tmo (segundos)"           # si existe, se usa para lags/rollings
-SLA_TARGET     = 0.90                       # 90%
-ASA_TARGET_S   = 22.0                       # 22s
-MAX_OCCUPANCY  = 0.80                       # productividad 80%
+def required_agents_erlang_c(calls_per_hour, AHT_sec, sla_target=0.90, asa_target_sec=22.0, max_occupancy=0.80):
+    if calls_per_hour <= 0 or AHT_sec <= 0: return 0
+    lam = calls_per_hour / 3600.0
+    A = lam * AHT_sec
+    N = max(1, int(np.ceil(A / max_occupancy)))
+    while True:
+        if service_level(N, A, AHT_sec, asa_target_sec) >= sla_target and (A / N) <= max_occupancy:
+            return N
+        N += 1
+        if N > 10000: return N
+# ------------------------------------------
+
+# ===== Parámetros =====
+TARGET_COL     = "recibidos"
+TMO_COL_OPT    = "tmo (segundos)"
+SLA_TARGET     = 0.90
+ASA_TARGET_S   = 22.0
+MAX_OCCUPANCY  = 0.80
 SEED           = 42
-
 np.random.seed(SEED)
 
-# ==========================
-# Utilidades
-# ==========================
-def find_data_file():
-    for p in DATA_PATHS:
+PUBLIC_DIR   = "./public"
+OUTPUT_JSON  = f"{PUBLIC_DIR}/forecast_3m.json"
+OUTPUT_CSV   = f"{PUBLIC_DIR}/forecast_3m.csv"
+
+# ===== Utilidades: tolerantes a nombres =====
+def find_first(paths):
+    for p in paths:
         if os.path.exists(p):
-            print("📄 Histórico:", p)
             return p
-    raise FileNotFoundError("No se encontró 'Data/Hosting ia.xlsx'.")
+    return None
+
+def find_model_path():
+    p = find_first(["./model_lgb.pkl", "./model-lgb.pkl"])
+    if not p:
+        raise FileNotFoundError("No encontré el modelo (busqué model_lgb.pkl y model-lgb.pkl).")
+    print("🧠 Modelo:", p)
+    return p
+
+def find_metrics_path():
+    # opcional
+    return find_first(["./train_metrics.json", "./trimetrics.json"])
+
+def find_features_path():
+    p = find_first(["./features.json"])
+    if not p:
+        raise FileNotFoundError("Falta features.json")
+    print("📑 Features:", p)
+    return p
+
+def find_data_file():
+    p = find_first(["./data/Hosting ia.xlsx", "./Data/Hosting ia.xlsx", "./Hosting ia.xlsx"])
+    if not p:
+        raise FileNotFoundError("No se encontró el histórico (busqué en data/ y Data/).")
+    print("📄 Histórico:", p)
+    return p
 
 def ensure_datetime(df):
     for c in ["datetime","datatime","fecha_hora","ts"]:
         if c in df.columns:
-            df["datetime"] = pd.to_datetime(df[c], errors="coerce")
-            return df
+            df["datetime"] = pd.to_datetime(df[c], errors="coerce"); return df
     fcol = next((c for c in ["fecha","date","dia"] if c in df.columns), None)
     hcol = next((c for c in ["hora","time"] if c in df.columns), None)
     if fcol and hcol:
@@ -65,12 +110,10 @@ def ensure_datetime(df):
         if mask_num.any():
             h_num = pd.to_timedelta(pd.to_numeric(df.loc[mask_num, hcol], errors="coerce"), unit="h")
             h.loc[mask_num] = h_num.values
-        df["datetime"] = f + h.fillna(pd.Timedelta(0))
-        return df
+        df["datetime"] = f + h.fillna(pd.Timedelta(0)); return df
     if fcol:
         f = pd.to_datetime(df[fcol], errors="coerce", dayfirst=True)
-        df["datetime"] = f
-        return df
+        df["datetime"] = f; return df
     raise ValueError("No encontré columnas para construir 'datetime'.")
 
 def aggregate_to_hour(df, target_col, tmo_col=None):
@@ -91,35 +134,25 @@ def add_time_cols(df):
     df["dow"]   = df["datetime"].dt.dayofweek
     df["week"]  = df["datetime"].dt.isocalendar().week.astype(int)
     df["month"] = df["datetime"].dt.month
-    df["hour_sin"] = np.sin(2*np.pi*df["hour"]/24)
-    df["hour_cos"] = np.cos(2*np.pi*df["hour"]/24)
-    df["dow_sin"]  = np.sin(2*np.pi*df["dow"]/7)
-    df["dow_cos"]  = np.cos(2*np.pi*df["dow"]/7)
+    df["hour_sin"] = np.sin(2*np.pi*df["hour"]/24); df["hour_cos"] = np.cos(2*np.pi*df["hour"]/24)
+    df["dow_sin"]  = np.sin(2*np.pi*df["dow"]/7);   df["dow_cos"]  = np.cos(2*np.pi*df["dow"]/7)
     return df
 
-def build_feature_row(ts, hist_df, X_cols, use_tmo, target_col, tmo_col,
-                      robust_window_hours=24*365):
-    row = pd.DataFrame({"datetime":[ts]})
-    row = add_time_cols(row)
-
+def build_feature_row(ts, hist_df, X_cols, use_tmo, target_col, tmo_col, window_hours=24*365):
+    row = pd.DataFrame({"datetime":[ts]}); row = add_time_cols(row)
     h = hist_df.set_index("datetime")
     y_series = h["yhat"].fillna(h[target_col])
-
     for lag in range(1, 25):
         row[f"{target_col}_lag{lag}"] = y_series.reindex([ts - pd.Timedelta(hours=lag)]).values[0]
-
-    hist_window = y_series.loc[ts - pd.Timedelta(hours=robust_window_hours):ts]
-    row[f"{target_col}_roll3"]  = hist_window.tail(3).mean()
-    row[f"{target_col}_roll6"]  = hist_window.tail(6).mean()
-    row[f"{target_col}_roll24"] = hist_window.tail(24).mean()
-
+    w = y_series.loc[ts - pd.Timedelta(hours=window_hours):ts]
+    row[f"{target_col}_roll3"]  = w.tail(3).mean()
+    row[f"{target_col}_roll6"]  = w.tail(6).mean()
+    row[f"{target_col}_roll24"] = w.tail(24).mean()
     if use_tmo and tmo_col in h.columns:
         tmo_series = h[tmo_col]
         row[f"{tmo_col}_lag1"]  = tmo_series.reindex([ts - pd.Timedelta(hours=1)]).values[0]
-        row[f"{tmo_col}_roll3"] = tmo_series.loc[ts - pd.Timedelta(hours=robust_window_hours):ts].tail(3).mean()
-
-    row = row.reindex(columns=set(["datetime"] + X_cols))
-    return row
+        row[f"{tmo_col}_roll3"] = tmo_series.loc[ts - pd.Timedelta(hours=window_hours):ts].tail(3).mean()
+    return row.reindex(columns=set(["datetime"] + X_cols))
 
 def end_of_month_plus2(ts):
     y, m = ts.year, ts.month
@@ -127,63 +160,42 @@ def end_of_month_plus2(ts):
     y3 = y + (m3 - 1)//12
     m3 = ((m3 - 1) % 12) + 1
     first_next = pd.Timestamp(year=y3, month=m3, day=1, hour=0)
-    end_m2 = first_next - pd.Timedelta(hours=1)
-    return end_m2
+    return first_next - pd.Timedelta(hours=1)
 
 def estimate_future_tmo(ts, hist_df, tmo_col, use_tmo=True):
     if use_tmo and tmo_col in hist_df.columns:
         s = hist_df.set_index("datetime")[tmo_col]
         last24 = s.loc[ts - pd.Timedelta(hours=24):ts]
-        if len(last24) >= 1:
-            return float(last24.mean())
+        if len(last24) >= 1: return float(last24.mean())
         return float(s.dropna().iloc[-1]) if s.dropna().size else 300.0
     return 300.0
 
-# ==========================
-# Carga artefactos
-# ==========================
-if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError("Falta model-lgb.pkl")
-if not os.path.exists(FEATS_PATH):
-    raise FileNotFoundError("Falta features.json")
+# ===== Carga artefactos =====
+MODEL_PATH   = find_model_path()
+FEATS_PATH   = find_features_path()
+METRICS_PATH = find_metrics_path()
 
 model = joblib.load(MODEL_PATH)
 with open(FEATS_PATH, "r", encoding="utf-8") as f:
     X_cols = json.load(f)["feature_columns"]
 
-rmse_for_bands = None
-if os.path.exists(METRICS_PATH):
-    with open(METRICS_PATH,"r",encoding="utf-8") as f:
-        mets = json.load(f)
-        rmse_for_bands = float(mets.get("test",{}).get("RMSE", np.nan))
-
-# ==========================
-# Seed histórico para lags
-# ==========================
+# ===== Seed histórico =====
 raw = pd.read_excel(find_data_file())
 df  = ensure_datetime(raw)
-
 use_tmo = (TMO_COL_OPT in df.columns)
 keep = ["datetime", TARGET_COL] + ([TMO_COL_OPT] if use_tmo else [])
 df  = df[keep].dropna(subset=["datetime"]).sort_values("datetime")
-
-hist = aggregate_to_hour(df, target_col=TARGET_COL, tmo_col=(TMO_COL_OPT if use_tmo else None))
-hist = hist.sort_values("datetime").reset_index(drop=True)
+hist = aggregate_to_hour(df, TARGET_COL, TMO_COL_OPT if use_tmo else None).sort_values("datetime").reset_index(drop=True)
 hist["yhat"] = np.nan
 
-# ==========================
-# Horizonte: ahora -> fin de mes + 2
-# ==========================
+# ===== Horizonte: ahora -> fin de mes + 2 =====
 now = pd.Timestamp.now(tz=None).floor("h")
 start_gen = max(now + pd.Timedelta(hours=1), hist["datetime"].max() + pd.Timedelta(hours=1))
-end_gen = end_of_month_plus2(now)
-
+end_gen   = end_of_month_plus2(now)
 future_hours = int((end_gen - start_gen) / pd.Timedelta(hours=1)) + 1
 future_index = [start_gen + pd.Timedelta(hours=i) for i in range(max(0, future_hours))]
 
-# ==========================
-# Predicción recursiva + TMO + Erlang-C
-# ==========================
+# ===== Predicción recursiva + dimensionamiento =====
 rows = []
 for ts in future_index:
     feat_row   = build_feature_row(ts, hist, X_cols, use_tmo, TARGET_COL, TMO_COL_OPT)
@@ -191,9 +203,9 @@ for ts in future_index:
     yhat_calls = float(model.predict(x)[0])
     tmo_hat    = estimate_future_tmo(ts, hist, TMO_COL_OPT, use_tmo)
 
+    # alimentar histórico
     new_row = {"datetime": ts, TARGET_COL: np.nan}
-    if use_tmo:
-        new_row[TMO_COL_OPT] = tmo_hat
+    if use_tmo: new_row[TMO_COL_OPT] = tmo_hat
     new_row["yhat"] = yhat_calls
     hist = pd.concat([hist, pd.DataFrame([new_row])], ignore_index=True)
 
@@ -217,16 +229,13 @@ forecast["fecha"] = forecast["datetime"].dt.strftime("%Y-%m-%d")
 forecast["hora"]  = forecast["datetime"].dt.strftime("%H:%M")
 forecast = forecast[["fecha","hora","llamadas_recibidas","tmo_pred_seg","ejecutivos_requeridos","datetime"]]
 
-# ==========================
-# Guardar a /public
-# ==========================
+# ===== Guardar a /public =====
 os.makedirs(PUBLIC_DIR, exist_ok=True)
-
-out_json_df = forecast.drop(columns=["datetime"]).copy()
-out_json_df.to_json(OUTPUT_JSON, orient="records", force_ascii=False, indent=2)
+forecast.drop(columns=["datetime"]).to_json(OUTPUT_JSON, orient="records", force_ascii=False, indent=2)
 forecast.drop(columns=["datetime"]).to_csv(OUTPUT_CSV, index=False)
 
 print("✅ Forecast 3 meses guardado en:")
 print(" -", OUTPUT_JSON)
 print(" -", OUTPUT_CSV)
 print(forecast.head(5))
+
