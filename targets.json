@@ -1,8 +1,11 @@
 {
+  "calls_col": "recibidos",
+  "tmo_col": "tmo (segundos)",
   "targets": [
     "y_calls_next",
     "y_tmo_next"
   ],
-  "calls_col": "recibidos",
-  "tmo_col": "tmo (segundos)"
+  "winsor_p": 0.99,
+  "winsor_by": "hour_of_day",
+  "calls_transform": "identity"
 }
