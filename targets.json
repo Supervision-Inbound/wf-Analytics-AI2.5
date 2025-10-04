@@ -1,0 +1,8 @@
+{
+  "targets": [
+    "y_calls_next",
+    "y_tmo_next"
+  ],
+  "calls_col": "recibidos",
+  "tmo_col": "tmo (segundos)"
+}
