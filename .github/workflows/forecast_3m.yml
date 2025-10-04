@@ -2,11 +2,11 @@ name: Generar Forecast 3M
 
 on:
   schedule:
-    - cron: '0 3 * * *'   # diario 03:00 UTC (~medianoche CL -3)
+    - cron: '0 3 * * *'     # diario 03:00 UTC (~medianoche CL -3)
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Tag del release que contiene model_multi.pkl (dejar vacío para 'latest')"
+        description: "Tag del release con model_multi.pkl (vacío = último release)"
         required: false
         default: ""
 
@@ -31,22 +31,28 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 👇 NUEVO: descarga del modelo desde GitHub Releases
+      # ==== DESCARGA DEL MODELO DESDE RELEASE ====
       - name: Descargar modelo desde Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          TAG: ${{ inputs.release_tag }}
+          TAG_INPUT: ${{ inputs.release_tag }}
         run: |
-          # instala gh (viene preinstalado normalmente, pero nos aseguramos)
-          gh --version || sudo apt-get update && sudo apt-get install -y gh
-          if [ -n "$TAG" ]; then
-            echo "Descargando model_multi.pkl del release tag $TAG ..."
-            gh release download "$TAG" --repo "$REPO" --pattern "model_multi.pkl" --dir .
+          set -euo pipefail
+          gh --version
+
+          # Si pasas un tag manual en "Run workflow", se usa ese.
+          # Si no, tomamos el tag del último release publicado.
+          if [ -n "${TAG_INPUT}" ]; then
+            TAG="${TAG_INPUT}"
           else
-            echo "Descargando model_multi.pkl del release 'latest' ..."
-            gh release download --latest --repo "$REPO" --pattern "model_multi.pkl" --dir .
+            TAG="$(gh release view --repo "$REPO" --json tagName --jq .tagName)"
           fi
+
+          echo "Usando release tag: $TAG"
+          gh release download "$TAG" --repo "$REPO" -p "model_multi.pkl" -D .
+
+          echo "Verificando archivo descargado:"
           ls -lh model_multi.pkl
 
       - name: Generar Forecast 3M
@@ -64,3 +70,4 @@ jobs:
             git commit -m "chore(forecast): actualización automática de forecast 3M"
             git push
           fi
+
