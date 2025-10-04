@@ -80,7 +80,6 @@ def find_model_path():
     return p
 
 def find_metrics_path():
-    # opcional
     return find_first(["./train_metrics.json", "./trimetrics.json"])
 
 def find_features_path():
@@ -180,7 +179,8 @@ with open(FEATS_PATH, "r", encoding="utf-8") as f:
     X_cols = json.load(f)["feature_columns"]
 
 # ===== Seed histórico =====
-raw = pd.read_excel(find_data_file())
+# 👇 Ajuste solicitado: forzar engine="openpyxl" para leer XLSX en Actions
+raw = pd.read_excel(find_data_file(), engine="openpyxl")
 df  = ensure_datetime(raw)
 use_tmo = (TMO_COL_OPT in df.columns)
 keep = ["datetime", TARGET_COL] + ([TMO_COL_OPT] if use_tmo else [])
