@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Forecast 3 meses (multitarea) → public/forecast_3m.(json|csv)
-Columnas: fecha, hora, llamadas_recibidas, tmo_pred_seg, ejecutivos_requeridos
+Forecast 3 meses (multitarea robusto) → public/forecast_3m.json / .csv
+- Usa model_multi.pkl (calls: quantile median, tmo: huber)
+- Respeta metadata de targets.json (log1p o no)
 """
 import os, json
 import numpy as np
 import pandas as pd
 import joblib
 
-# --- Erlang C básico ---
+# --- Erlang C ---
 def erlang_c_prob_wait(N, A):
     if A<=0: return 0.0
     if N<=0: return 1.0
     if A>=N: return 1.0
     summ=0.0; term=1.0
     for k in range(1,N):
-        summ += term
-        term *= A/k
+        summ += term; term *= A/k
     summ += term
     pn = term*(A/N)/(1.0-(A/N))
     return float(pn/(summ+pn))
@@ -38,20 +38,17 @@ def required_agents(cph, aht, sla=0.90, asa=22.0, occ=0.80):
         if N>10000: return N
 
 # --- Paths ---
-PUBLIC_DIR   = "./public"
-os.makedirs(PUBLIC_DIR, exist_ok=True)
+PUBLIC_DIR   = "./public"; os.makedirs(PUBLIC_DIR, exist_ok=True)
 OUT_JSON     = f"{PUBLIC_DIR}/forecast_3m.json"
 OUT_CSV      = f"{PUBLIC_DIR}/forecast_3m.csv"
 
-MODEL_PATHS  = ["./model_multi.pkl", "./model-lgb.pkl", "./model_lgb.pkl"]  # por compatibilidad
+MODEL_PATH   = "./model_multi.pkl"
 FEATS_PATH   = "./features.json"
-TARGETS_PATH = "./targets.json"  # necesario para nombres de salidas
+TARGETS_PATH = "./targets.json"
 
 DATA_PATHS   = ["./data/Hosting ia.xlsx","./Data/Hosting ia.xlsx","./Hosting ia.xlsx",
                 "/kaggle/input/historico-trafico/Hosting ia.xlsx"]
 
-CALLS_COL = "recibidos"
-TMO_COL   = "tmo (segundos)"
 SLA=0.90; ASA=22.0; OCC=0.80
 
 def find_first(paths):
@@ -95,23 +92,22 @@ def add_time_cols(df):
     df["dow_sin"]=np.sin(2*np.pi*df["dow"]/7);   df["dow_cos"]=np.cos(2*np.pi*df["dow"]/7)
     return df
 
-def build_row(ts,hist,X_cols):
+def build_row(ts,hist,X_cols,calls_col,tmo_col):
     row=pd.DataFrame({"datetime":[ts]}); row=add_time_cols(row)
     h=hist.set_index("datetime")
-    yS=h["yhat_calls"].fillna(h[CALLS_COL])
-    tS=h["yhat_tmo"].fillna(h[TMO_COL]) if TMO_COL in h.columns else pd.Series(dtype=float)
+    yS=h["yhat_calls"].fillna(h[calls_col])
+    tS=h["yhat_tmo"].fillna(h[tmo_col]) if tmo_col in h.columns else pd.Series(dtype=float)
 
     for lag in range(1,25):
-        row[f"{CALLS_COL}_lag{lag}"] = yS.reindex([ts-pd.Timedelta(hours=lag)]).values[0]
-        if TMO_COL in h.columns:
-            row[f"{TMO_COL}_lag{lag}"] = tS.reindex([ts-pd.Timedelta(hours=lag)]).values[0]
-    row[f"{CALLS_COL}_roll3"]=yS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(3).mean()
-    row[f"{CALLS_COL}_roll6"]=yS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(6).mean()
-    row[f"{CALLS_COL}_roll24"]=yS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(24).mean()
-    if TMO_COL in h.columns:
-        row[f"{TMO_COL}_roll3"]=tS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(3).mean()
-        row[f"{TMO_COL}_roll6"]=tS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(6).mean()
-        row[f"{TMO_COL}_roll24"]=tS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(24).mean()
+        row[f"{calls_col}_lag{lag}"] = yS.reindex([ts-pd.Timedelta(hours=lag)]).values[0]
+        row[f"{tmo_col}_lag{lag}"]   = tS.reindex([ts-pd.Timedelta(hours=lag)]).values[0] if tmo_col in h.columns else np.nan
+    row[f"{calls_col}_roll3"]=yS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(3).mean()
+    row[f"{calls_col}_roll6"]=yS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(6).mean()
+    row[f"{calls_col}_roll24"]=yS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(24).mean()
+    if tmo_col in h.columns:
+        row[f"{tmo_col}_roll3"]=tS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(3).mean()
+        row[f"{tmo_col}_roll6"]=tS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(6).mean()
+        row[f"{tmo_col}_roll24"]=tS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(24).mean()
     return row.reindex(columns=set(["datetime"]+X_cols))
 
 def end_of_month_plus2(ts):
@@ -121,12 +117,19 @@ def end_of_month_plus2(ts):
     return first_next - pd.Timedelta(hours=1)
 
 # --- Carga artefactos ---
-model_path = find_first(MODEL_PATHS)
-assert model_path and model_path.endswith("model_multi.pkl"), "Debes usar el modelo multitarea: model_multi.pkl"
-model = joblib.load(model_path)
+assert os.path.exists(MODEL_PATH), "Falta model_multi.pkl"
+assert os.path.exists(FEATS_PATH), "Falta features.json"
+assert os.path.exists(TARGETS_PATH), "Falta targets.json"
+bundle = joblib.load(MODEL_PATH)
+calls_est = bundle["calls_est"]; tmo_est = bundle["tmo_est"]
+
 with open(FEATS_PATH,"r",encoding="utf-8") as f: X_cols=json.load(f)["feature_columns"]
 with open(TARGETS_PATH,"r",encoding="utf-8") as f: meta=json.load(f)
-assert "y_calls_next" in meta["targets"] and "y_tmo_next" in meta["targets"], "targets.json inválido."
+CALLS_COL = meta["calls_col"]; TMO_COL = meta["tmo_col"]
+CALLS_TRANS = meta.get("calls_transform","identity")
+
+def inv_calls(x):
+    return np.expm1(x) if CALLS_TRANS=="log1p" else x
 
 # --- Seed histórico ---
 data_path = find_first(DATA_PATHS); assert data_path, "Falta histórico."
@@ -143,24 +146,28 @@ end   = end_of_month_plus2(now)
 H = max(0, int((end-start)/pd.Timedelta(hours=1))+1)
 future_index = [start+pd.Timedelta(hours=i) for i in range(H)]
 
-# --- Predicción recursiva (calls + tmo) ---
+# --- Predicción recursiva ---
 rows=[]
 for ts in future_index:
-    feat = build_row(ts, hist, X_cols)
+    feat = build_row(ts, hist, X_cols, CALLS_COL, TMO_COL)
     X    = feat[X_cols].values
-    yhat = np.column_stack([est.predict(X) for est in model.estimators_])[0]
-    calls_hat = float(yhat[0]); tmo_hat = float(yhat[1])
 
-    # alimentar historial para siguientes lags
+    y_calls = inv_calls(calls_est.predict(X))
+    y_tmo   = tmo_est.predict(X)
+
+    calls_hat = float(max(y_calls[0], 0.0))
+    tmo_hat   = float(max(y_tmo[0],   0.0))
+
+    # alimentar histórico
     new = {"datetime":ts, CALLS_COL:np.nan, TMO_COL:np.nan, "yhat_calls":calls_hat, "yhat_tmo":tmo_hat}
     hist = pd.concat([hist, pd.DataFrame([new])], ignore_index=True)
 
-    N = required_agents(max(calls_hat,0.0), max(tmo_hat,1.0), SLA, ASA, OCC)
+    N = required_agents(calls_hat, max(tmo_hat,1.0), sla=0.90, asa=22.0, occ=0.80)
 
     rows.append({
         "datetime": ts,
-        "llamadas_recibidas": max(calls_hat,0.0),
-        "tmo_pred_seg": max(tmo_hat,0.0),
+        "llamadas_recibidas": calls_hat,
+        "tmo_pred_seg": tmo_hat,
         "ejecutivos_requeridos": int(N)
     })
 
@@ -171,7 +178,7 @@ forecast = forecast[["fecha","hora","llamadas_recibidas","tmo_pred_seg","ejecuti
 forecast.drop(columns=["datetime"]).to_json(OUT_JSON, orient="records", force_ascii=False, indent=2)
 forecast.drop(columns=["datetime"]).to_csv(OUT_CSV, index=False)
 
-print("✅ Forecast multitarea listo:")
+print("✅ Forecast 3M robusto listo:")
 print(" -", OUT_JSON)
 print(" -", OUT_CSV)
 print(forecast.head(5))
