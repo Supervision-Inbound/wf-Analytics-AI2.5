@@ -1,16 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Genera forecast rolling de 3 meses (desde ahora hasta fin de mes+2),
-y guarda JSON/CSV con columnas:
-  - fecha, hora, llamadas_recibidas, tmo_pred_seg, ejecutivos_requeridos
-
-Lee:
-  - model_lgb.pkl / model-lgb.pkl
-  - features.json
-  - data/Hosting ia.xlsx (o Data/Hosting ia.xlsx)
-Escribe:
-  - public/forecast_3m.json
-  - public/forecast_3m.csv
+Forecast rolling 3 meses (desde ahora hasta fin de mes+2)
+Salida: public/forecast_3m.json y public/forecast_3m.csv
+Columnas: fecha, hora, llamadas_recibidas, tmo_pred_seg, ejecutivos_requeridos
 """
 
 import os, json
@@ -65,7 +57,7 @@ PUBLIC_DIR   = "./public"
 OUTPUT_JSON  = f"{PUBLIC_DIR}/forecast_3m.json"
 OUTPUT_CSV   = f"{PUBLIC_DIR}/forecast_3m.csv"
 
-# ===== Utilidades: tolerantes a nombres =====
+# ===== Utilidades tolerantes a nombres =====
 def find_first(paths):
     for p in paths:
         if os.path.exists(p):
@@ -75,24 +67,22 @@ def find_first(paths):
 def find_model_path():
     p = find_first(["./model_lgb.pkl", "./model-lgb.pkl"])
     if not p:
-        raise FileNotFoundError("No encontré el modelo (busqué model_lgb.pkl y model-lgb.pkl).")
+        raise FileNotFoundError("No encontré el modelo (model_lgb.pkl / model-lgb.pkl).")
     print("🧠 Modelo:", p)
+    return p
+
+def find_features_path():
+    p = find_first(["./features.json"])
+    if not p: raise FileNotFoundError("Falta features.json")
+    print("📑 Features:", p)
     return p
 
 def find_metrics_path():
     return find_first(["./train_metrics.json", "./trimetrics.json"])
 
-def find_features_path():
-    p = find_first(["./features.json"])
-    if not p:
-        raise FileNotFoundError("Falta features.json")
-    print("📑 Features:", p)
-    return p
-
 def find_data_file():
     p = find_first(["./data/Hosting ia.xlsx", "./Data/Hosting ia.xlsx", "./Hosting ia.xlsx"])
-    if not p:
-        raise FileNotFoundError("No se encontró el histórico (busqué en data/ y Data/).")
+    if not p: raise FileNotFoundError("No se encontró el histórico (data/Hosting ia.xlsx).")
     print("📄 Histórico:", p)
     return p
 
@@ -115,18 +105,52 @@ def ensure_datetime(df):
         df["datetime"] = f; return df
     raise ValueError("No encontré columnas para construir 'datetime'.")
 
-def aggregate_to_hour(df, target_col, tmo_col=None):
+# ---------- NUEVO: agregación inteligente ----------
+def aggregate_to_hour_smart(df, target_col, tmo_col=None):
+    """
+    Regla:
+    - Si en la hora hay 1 fila -> se deja igual.
+    - Si hay 2 filas y sus minutos no son 00 (ej: 00 y 30) -> asumimos medias horas -> SUMA.
+    - Si hay >2 filas, o 2 filas con el mismo valor exacto (posible duplicado),
+      o la varianza es ~0 -> usamos PROMEDIO para evitar duplicaciones.
+    """
     df = df.copy()
-    df["datetime_h"] = df["datetime"].dt.floor("h")
-    if tmo_col and tmo_col in df.columns:
-        df["_tmo_w"] = df[tmo_col]*df[target_col]
-        agg = (df.groupby("datetime_h",as_index=False)
-                 .agg({target_col:"sum","_tmo_w":"sum"}))
-        agg[tmo_col] = np.where(agg[target_col]>0, agg["_tmo_w"]/agg[target_col], 0.0)
-        agg = agg.drop(columns=["_tmo_w"])
-    else:
-        agg = df.groupby("datetime_h",as_index=False).agg({target_col:"sum"})
-    return agg.rename(columns={"datetime_h":"datetime"})
+    df["dt_floor"] = df["datetime"].dt.floor("h")
+    df["minute"]   = df["datetime"].dt.minute
+
+    def agg_group(g):
+        n = len(g)
+        vals = g[target_col].astype(float)
+        # ¿hay minutos 00 y 30?
+        mins = set(g["minute"].tolist())
+        two_halfhours = (n == 2) and (mins <= {0,30}) and (0 in mins or 30 in mins) and not np.isclose(vals.iloc[0], vals.iloc[1])
+        all_equal = vals.nunique(dropna=True) == 1
+        if n == 1:
+            target = vals.iloc[0]
+        elif two_halfhours:
+            target = vals.sum()
+        elif n == 2 and all_equal:
+            target = vals.mean()   # duplicado exacto
+        elif n > 2:
+            # si parece ya-horario repetido (mucha repetición) -> promedio
+            if vals.std(ddof=0) < 1e-6:
+                target = vals.mean()
+            else:
+                # si realmente son subfragmentos (15min, etc.), suma
+                target = vals.sum()
+        else:
+            # caso genérico
+            target = vals.sum()
+
+        out = {"datetime": g["dt_floor"].iloc[0], target_col: target}
+        if tmo_col and tmo_col in g.columns:
+            # TMO ponderado por target
+            w = (g[tmo_col].astype(float) * vals).sum()
+            out[tmo_col] = (w / target) if target > 0 else 0.0
+        return pd.Series(out)
+
+    agg = df.groupby("dt_floor", as_index=False).apply(agg_group)
+    return agg.sort_values("datetime").reset_index(drop=True)
 
 def add_time_cols(df):
     df["hour"]  = df["datetime"].dt.hour
@@ -169,7 +193,7 @@ def estimate_future_tmo(ts, hist_df, tmo_col, use_tmo=True):
         return float(s.dropna().iloc[-1]) if s.dropna().size else 300.0
     return 300.0
 
-# ===== Carga artefactos =====
+# ===== Carga artefactos y datos =====
 MODEL_PATH   = find_model_path()
 FEATS_PATH   = find_features_path()
 METRICS_PATH = find_metrics_path()
@@ -178,29 +202,41 @@ model = joblib.load(MODEL_PATH)
 with open(FEATS_PATH, "r", encoding="utf-8") as f:
     X_cols = json.load(f)["feature_columns"]
 
-# ===== Seed histórico =====
-# 👇 Ajuste solicitado: forzar engine="openpyxl" para leer XLSX en Actions
+# Histórico para seed (forzamos motor openpyxl en Actions)
 raw = pd.read_excel(find_data_file(), engine="openpyxl")
 df  = ensure_datetime(raw)
+
 use_tmo = (TMO_COL_OPT in df.columns)
 keep = ["datetime", TARGET_COL] + ([TMO_COL_OPT] if use_tmo else [])
 df  = df[keep].dropna(subset=["datetime"]).sort_values("datetime")
-hist = aggregate_to_hour(df, TARGET_COL, TMO_COL_OPT if use_tmo else None).sort_values("datetime").reset_index(drop=True)
+
+# ---------- usar agregación inteligente ----------
+hist = aggregate_to_hour_smart(df, TARGET_COL, TMO_COL_OPT if use_tmo else None)
+
+# Cálculo de percentil 99 histórico (para cap)
+p99 = float(np.nanpercentile(hist[TARGET_COL].values, 99)) if len(hist) else 0.0
+cap_value = 1.1 * max(p99, 1.0)   # margen 10%
+
+hist = hist.sort_values("datetime").reset_index(drop=True)
 hist["yhat"] = np.nan
 
-# ===== Horizonte: ahora -> fin de mes + 2 =====
+# ===== Horizonte =====
 now = pd.Timestamp.now(tz=None).floor("h")
 start_gen = max(now + pd.Timedelta(hours=1), hist["datetime"].max() + pd.Timedelta(hours=1))
 end_gen   = end_of_month_plus2(now)
 future_hours = int((end_gen - start_gen) / pd.Timedelta(hours=1)) + 1
 future_index = [start_gen + pd.Timedelta(hours=i) for i in range(max(0, future_hours))]
 
-# ===== Predicción recursiva + dimensionamiento =====
+# ===== Predicción recursiva + cap + Erlang-C =====
 rows = []
 for ts in future_index:
     feat_row   = build_feature_row(ts, hist, X_cols, use_tmo, TARGET_COL, TMO_COL_OPT)
     x          = feat_row[X_cols].values
     yhat_calls = float(model.predict(x)[0])
+
+    # ---------- CAP por P99 histórico ----------
+    yhat_calls = max(0.0, min(yhat_calls, cap_value))
+
     tmo_hat    = estimate_future_tmo(ts, hist, TMO_COL_OPT, use_tmo)
 
     # alimentar histórico
@@ -210,7 +246,7 @@ for ts in future_index:
     hist = pd.concat([hist, pd.DataFrame([new_row])], ignore_index=True)
 
     N_req = required_agents_erlang_c(
-        calls_per_hour=max(yhat_calls, 0.0),
+        calls_per_hour=yhat_calls,
         AHT_sec=max(tmo_hat, 1.0),
         sla_target=SLA_TARGET,
         asa_target_sec=ASA_TARGET_S,
@@ -219,7 +255,7 @@ for ts in future_index:
 
     rows.append({
         "datetime": ts,
-        "llamadas_recibidas": max(yhat_calls, 0.0),
+        "llamadas_recibidas": yhat_calls,
         "tmo_pred_seg": max(tmo_hat, 0.0),
         "ejecutivos_requeridos": int(N_req)
     })
@@ -229,7 +265,7 @@ forecast["fecha"] = forecast["datetime"].dt.strftime("%Y-%m-%d")
 forecast["hora"]  = forecast["datetime"].dt.strftime("%H:%M")
 forecast = forecast[["fecha","hora","llamadas_recibidas","tmo_pred_seg","ejecutivos_requeridos","datetime"]]
 
-# ===== Guardar a /public =====
+# ===== Guardar =====
 os.makedirs(PUBLIC_DIR, exist_ok=True)
 forecast.drop(columns=["datetime"]).to_json(OUTPUT_JSON, orient="records", force_ascii=False, indent=2)
 forecast.drop(columns=["datetime"]).to_csv(OUTPUT_CSV, index=False)
@@ -237,5 +273,7 @@ forecast.drop(columns=["datetime"]).to_csv(OUTPUT_CSV, index=False)
 print("✅ Forecast 3 meses guardado en:")
 print(" -", OUTPUT_JSON)
 print(" -", OUTPUT_CSV)
+print("Cap P99 usado:", cap_value)
 print(forecast.head(5))
+
 
