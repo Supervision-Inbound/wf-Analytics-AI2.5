@@ -1,0 +1,44 @@
+name: Generar Forecast 3M
+
+on:
+  schedule:
+    - cron: '0 3 * * *'   # todos los días 03:00 UTC (~00:00 Chile -3)
+  workflow_dispatch:       # ejecutar manualmente desde Actions
+
+permissions:
+  contents: write          # necesario para commitear al repo
+
+jobs:
+  build-forecast:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generar Forecast 3M
+        run: |
+          python forecast3m.py
+
+      # Commit de los archivos generados en /public
+      - name: Commit & push JSON/CSV a /public
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/forecast_3m.json public/forecast_3m.csv
+          if git diff --cached --quiet; then
+            echo "No hay cambios para commitear."
+          else
+            git commit -m "chore(forecast): actualización automática de forecast 3M"
+            git push
+          fi
