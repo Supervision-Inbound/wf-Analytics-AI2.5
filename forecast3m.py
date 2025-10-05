@@ -40,7 +40,31 @@ DEFAULT_TMO = 180.0
 SLA_TARGET   = 0.90   # 90%
 ASA_TARGET_S = 22     # 22 segundos
 MAX_OCC      = 0.85   # 85% de ocupación máxima
-SHRINKAGE    = 0.30   # 30% de ausentismo/pausas
+SHRINKAGE    = 0.30   # 30% de ausentismo/pausas (valor legacy; ahora derivamos desde turnos)
+
+# ===== NUEVO: Definición explícita de turno/productividad =====
+# Turno de 10h, 1h colación, 2 breaks de 15m, y 15% de estados auxiliares.
+SHIFT_HOURS = 10.0
+LUNCH_HOURS = 1.0
+BREAKS_MIN  = [15, 15]   # minutos
+AUX_RATE    = 0.15       # 15% del tiempo productivo en estados auxiliares
+
+def scheduled_productivity_factor(shift_hours: float,
+                                  lunch_hours: float,
+                                  breaks_min: list,
+                                  aux_rate: float) -> float:
+    """
+    Retorna el factor de productividad programada (horas neto productivas / horas agendadas).
+    - shift_hours: horas del turno (agendadas)
+    - lunch_hours: horas de colación (no productivas)
+    - breaks_min: lista de breaks en minutos
+    - aux_rate: proporción de estados auxiliares sobre el tiempo productivo bruto
+    """
+    breaks_h = sum(breaks_min) / 60.0
+    productive_hours = max(0.0, shift_hours - lunch_hours - breaks_h)  # 10 - 1 - 0.5 = 8.5
+    net_productive_hours = productive_hours * (1.0 - aux_rate)         # 8.5 * 0.85 = 7.225
+    return (net_productive_hours / shift_hours) if shift_hours > 0 else 0.0
+
 # --------------------------------
 
 # ===== Erlang-C utils =====
@@ -78,7 +102,7 @@ def required_agents(calls_h: float, aht_s: float,
     calls_h = max(0.0, float(calls_h))
     aht_s   = max(1.0, float(aht_s))   # evitar división por 0
 
-    lamb = calls_h / 3600.0            # llamadas por segundo
+    lamb = calls_h / 3600.0            # llamadas por segundo (intervalo de 1 hora)
     A = lamb * aht_s                    # Erlangs
 
     # piso por ocupación
@@ -94,7 +118,7 @@ def required_agents(calls_h: float, aht_s: float,
         N += 1
 
     N_productive = int(N)
-    N_scheduled  = int(np.ceil(N_productive / (1.0 - shrinkage)))
+    N_scheduled  = int(np.ceil(N_productive / (1.0 - shrinkage))) if (1.0 - shrinkage) > 0 else N_productive
 
     return {
         "A_erlangs": float(A),
@@ -197,6 +221,14 @@ def main():
     with open(OUT_JSON_DATAOUT, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
+    # ===== NUEVO: calcular productividad programada y shrinkage derivado =====
+    prod_factor = scheduled_productivity_factor(
+        SHIFT_HOURS, LUNCH_HOURS, BREAKS_MIN, AUX_RATE
+    )
+    derived_shrinkage = max(0.0, min(1.0, 1.0 - prod_factor))
+    # print opcional de control
+    print(f"[Turno] factor_productividad={prod_factor:.4f} -> shrinkage_derivado={derived_shrinkage:.4f}")
+
     # 7) Calcular Erlang-C y agentes (enteros)
     erlang_rows = []
     for row in payload:
@@ -208,7 +240,7 @@ def main():
             sla_target=SLA_TARGET,
             asa_s=ASA_TARGET_S,
             max_occ=MAX_OCC,
-            shrinkage=SHRINKAGE
+            shrinkage=derived_shrinkage   # <--- usar shrinkage derivado del turno real
         )
         erlang_rows.append({
             "ts": row["ts"],
@@ -223,7 +255,13 @@ def main():
                 "SLA_TARGET": SLA_TARGET,
                 "ASA_TARGET_S": ASA_TARGET_S,
                 "MAX_OCC": MAX_OCC,
-                "SHRINKAGE": SHRINKAGE
+                "SHRINKAGE_INPUT": SHRINKAGE,            # valor legacy configurado
+                "SHIFT_HOURS": SHIFT_HOURS,
+                "LUNCH_HOURS": LUNCH_HOURS,
+                "BREAKS_MIN": BREAKS_MIN,
+                "AUX_RATE": AUX_RATE,
+                "DERIVED_SHRINKAGE": round(derived_shrinkage, 4),
+                "PRODUCTIVITY_FACTOR": round(prod_factor, 4)
             }
         })
 
