@@ -1,73 +1,46 @@
-name: Generar Forecast 3M
+name: forecast3m
 
 on:
-  schedule:
-    - cron: '0 3 * * *'     # diario 03:00 UTC (~medianoche CL -3)
   workflow_dispatch:
-    inputs:
-      release_tag:
-        description: "Tag del release con model_multi.pkl (vacío = último release)"
-        required: false
-        default: ""
+  schedule:
+    - cron: "15 6 * * *"  # 06:15 UTC todos los días (ajusta si quieres)
 
 permissions:
   contents: write
 
 jobs:
-  build-forecast:
+  run-forecast:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configurar Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: Instalar dependencias
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ==== DESCARGA DEL MODELO DESDE RELEASE ====
-      - name: Descargar modelo desde Release
+      - name: Run inference (download models from Release)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          TAG_INPUT: ${{ inputs.release_tag }}
-        run: |
-          set -euo pipefail
-          gh --version
-
-          # Si pasas un tag manual en "Run workflow", se usa ese.
-          # Si no, tomamos el tag del último release publicado.
-          if [ -n "${TAG_INPUT}" ]; then
-            TAG="${TAG_INPUT}"
-          else
-            TAG="$(gh release view --repo "$REPO" --json tagName --jq .tagName)"
-          fi
-
-          echo "Usando release tag: $TAG"
-          gh release download "$TAG" --repo "$REPO" -p "model_multi.pkl" -D .
-
-          echo "Verificando archivo descargado:"
-          ls -lh model_multi.pkl
-
-      - name: Generar Forecast 3M
         run: |
           python forecast3m.py
 
-      - name: Commit & push JSON/CSV a /public
+      - name: Commit & push outputs
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/forecast_3m.json public/forecast_3m.csv || true
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/predicciones.json data_out/predicciones.csv
           if git diff --cached --quiet; then
             echo "No hay cambios para commitear."
           else
-            git commit -m "chore(forecast): actualización automática de forecast 3M"
+            git commit -m "chore(forecast): actualización automática de predicciones"
             git push
           fi
 
