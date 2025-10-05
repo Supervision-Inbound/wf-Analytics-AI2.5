@@ -1,5 +1,5 @@
 # forecast3m.py
-# Inferencia conjunta (recibidos + tmo) + dimensionamiento con Erlang-C
+# Inferencia conjunta (recibidos + tmo) + dimensionamiento con Erlang-C/A
 # Descarga modelos desde el último Release y publica JSON/CSV listos para front.
 
 import os
@@ -21,8 +21,8 @@ MODELS_DIR = "models"
 OUT_CSV            = "data_out/predicciones.csv"
 OUT_JSON_PUBLIC    = "public/predicciones.json"
 OUT_JSON_DATAOUT   = "data_out/predicciones.json"
-OUT_JSON_ERLANG    = "public/erlang_forecast.json"   # <--- NUEVO
-OUT_JSON_ERLANG_DO = "data_out/erlang_forecast.json" # <--- NUEVO
+OUT_JSON_ERLANG    = "public/erlang_forecast.json"
+OUT_JSON_ERLANG_DO = "data_out/erlang_forecast.json"
 STAMP_JSON         = "public/last_update.json"
 
 HOURS_AHEAD = 24 * 90  # 90 días
@@ -36,34 +36,25 @@ TARGET_TMO      = "tmo_seg"
 DEFAULT_LL  = 100.0
 DEFAULT_TMO = 180.0
 
-# Parámetros de operación (puedes cambiar arriba si hace falta)
+# Parámetros de operación
 SLA_TARGET   = 0.90   # 90%
 ASA_TARGET_S = 22     # 22 segundos
-MAX_OCC      = 0.85   # 85% de ocupación máxima
-SHRINKAGE    = 0.30   # 30% de ausentismo/pausas (valor legacy; ahora derivamos desde turnos)
+MAX_OCC      = 0.85   # 85% ocupación máxima
+SHRINKAGE    = 0.30   # legacy (mostrado en JSON; derivamos desde turnos)
 
-# ===== NUEVO: Definición explícita de turno/productividad =====
-# Turno de 10h, 1h colación, 2 breaks de 15m, y 15% de estados auxiliares.
+# ===== Turno/productividad (tu realidad operativa) =====
+# Turno 10h, 1h colación, 2 breaks de 15m, 15% auxiliares
 SHIFT_HOURS = 10.0
 LUNCH_HOURS = 1.0
 BREAKS_MIN  = [15, 15]   # minutos
-AUX_RATE    = 0.15       # 15% del tiempo productivo en estados auxiliares
+AUX_RATE    = 0.15
 
-def scheduled_productivity_factor(shift_hours: float,
-                                  lunch_hours: float,
-                                  breaks_min: list,
-                                  aux_rate: float) -> float:
-    """
-    Retorna el factor de productividad programada (horas neto productivas / horas agendadas).
-    - shift_hours: horas del turno (agendadas)
-    - lunch_hours: horas de colación (no productivas)
-    - breaks_min: lista de breaks en minutos
-    - aux_rate: proporción de estados auxiliares sobre el tiempo productivo bruto
-    """
-    breaks_h = sum(breaks_min) / 60.0
-    productive_hours = max(0.0, shift_hours - lunch_hours - breaks_h)  # 10 - 1 - 0.5 = 8.5
-    net_productive_hours = productive_hours * (1.0 - aux_rate)         # 8.5 * 0.85 = 7.225
-    return (net_productive_hours / shift_hours) if shift_hours > 0 else 0.0
+# ===== Erlang-A (abandono/paciencia) + restricciones adicionales =====
+USE_ERLANG_A       = True      # si False -> Erlang-C tradicional
+MEAN_PATIENCE_S    = 60.0      # paciencia media ~ exponencial
+ABANDON_MAX        = 0.06      # <= 6% (nuevo)
+AWT_MAX_S          = 120.0     # tiempo medio de espera objetivo (nuevo)
+USE_STRICT_OCC_CAP = True      # respetar tope de ocupación
 
 # --------------------------------
 
@@ -73,7 +64,6 @@ def erlang_c_prob_wait(N: int, A: float) -> float:
     if A <= 0: return 0.0
     if N <= 0: return 1.0
     if A >= N: return 1.0
-    # sumatoria estable
     summ = 0.0
     term = 1.0
     for k in range(N):
@@ -85,35 +75,104 @@ def erlang_c_prob_wait(N: int, A: float) -> float:
     return float(p_wait)
 
 def service_level(A: float, N: int, AHT: float, T: float) -> float:
-    """SL = P(espera <= T) con Erlang C y aproximación clásica."""
+    """SL = P(espera <= T) con Erlang-C (clásico, sin abandono)."""
     if N <= 0 or A <= 0: return 0.0
     if A >= N: return 0.0
     pw = erlang_c_prob_wait(N, A)
-    # Fórmula: 1 - Pw * exp(-(N-A)*(T/AHT))
     return 1.0 - pw * np.exp(-(N - A) * (T / AHT))
 
+def erlang_c_awt(A: float, N: int, AHT: float) -> float:
+    """
+    AWT (espera media) aproximada para Erlang-C:
+    E[W] = Pw * AHT / (N - A), con Pw = Erlang-C.
+    """
+    if N <= 0 or A <= 0 or N <= A:
+        return float('inf')
+    pw = erlang_c_prob_wait(N, A)
+    return float(pw * (AHT / (N - A)))
+
+# ===== Erlang-A (abandono con paciencia exponencial) =====
+def erlang_a_metrics(A: float, N: int, aht_s: float, patience_s: float, T: float):
+    """
+    Aproximación práctica M/M/N+M (Erlang-A):
+      μ = 1/AHT, θ = 1/patience, r = μ*(N - A) (si N>A)
+    - SL_A (global) = (1 - Pw) + Pw * [ r/(r+θ) * (1 - exp(-(r+θ)*T)) ]
+    - Abandono (global) ≈ Pw * [ θ/(r+θ) ]
+    - AWT (medio) ≈ Pw * 1/(r+θ)   (espera media hasta servicio o abandono)
+    """
+    if N <= 0 or A <= 0:
+        return 0.0, 1.0, float('inf')
+    mu = 1.0 / max(aht_s, 1.0)
+    theta = 1.0 / max(patience_s, 1.0)
+    if N <= A:
+        return 0.0, 1.0, float('inf')
+    pw = erlang_c_prob_wait(N, A)  # % que espera (baseline C)
+    r = mu * (N - A)
+    rate = r + theta
+    sl_a = (1.0 - pw) + pw * (r / rate) * (1.0 - np.exp(-rate * T))
+    aban = pw * (theta / rate)
+    awt  = pw * (1.0 / rate)
+    # recortes numéricos
+    sl_a = float(min(max(sl_a, 0.0), 1.0))
+    aban = float(min(max(aban, 0.0), 1.0))
+    return sl_a, aban, float(awt)
+
+# ===== Turnos/productividad =====
+def scheduled_productivity_factor(shift_hours: float,
+                                  lunch_hours: float,
+                                  breaks_min: list,
+                                  aux_rate: float) -> float:
+    """factor de productividad programada = horas neto productivas / horas agendadas."""
+    breaks_h = sum(breaks_min) / 60.0
+    productive_hours = max(0.0, shift_hours - lunch_hours - breaks_h)  # p.ej. 10 - 1 - 0.5 = 8.5
+    net_productive_hours = productive_hours * (1.0 - aux_rate)         # 8.5 * 0.85 = 7.225
+    return (net_productive_hours / shift_hours) if shift_hours > 0 else 0.0
+
+# ===== Dimensionamiento =====
 def required_agents(calls_h: float, aht_s: float,
                     sla_target: float, asa_s: float,
-                    max_occ: float, shrinkage: float) -> dict:
+                    max_occ: float, shrinkage: float,
+                    use_erlang_a: bool = USE_ERLANG_A,
+                    patience_s: float = MEAN_PATIENCE_S,
+                    abandon_max: float = ABANDON_MAX,
+                    awt_max_s: float = AWT_MAX_S,
+                    use_strict_occ_cap: bool = USE_STRICT_OCC_CAP) -> dict:
     """
-    Devuelve N (agentes productivos) y N_sched (agendados con shrinkage),
-    junto con métricas intermedias.
+    Devuelve N_productive y N_scheduled con métricas:
+      - A_erlangs, occupancy, service_level, abandon_rate, avg_wait_s
+    Cumple simultáneamente: SLA, ocupación, abandono y AWT máximo.
     """
     calls_h = max(0.0, float(calls_h))
     aht_s   = max(1.0, float(aht_s))   # evitar división por 0
 
-    lamb = calls_h / 3600.0            # llamadas por segundo (intervalo de 1 hora)
+    lamb = calls_h / 3600.0            # λ (1h)
     A = lamb * aht_s                    # Erlangs
 
     # piso por ocupación
-    N_occ_min = int(np.ceil(A / max_occ)) if max_occ > 0 else int(np.ceil(A + 1))
+    N_occ_min = int(np.ceil(A / max_occ)) if (use_strict_occ_cap and max_occ > 0) else int(np.ceil(A + 1))
     # piso por estabilidad
     N = max(N_occ_min, int(np.ceil(A)) + 1)
 
-    # subir hasta cumplir SLA
-    for _ in range(1000):
-        sl = service_level(A, N, aht_s, asa_s)
-        if sl >= sla_target and (A / N) <= max_occ:
+    service = 0.0
+    aban = 1.0
+    awt = float('inf')
+
+    # subir hasta cumplir metas
+    for _ in range(3000):
+        if use_erlang_a:
+            service, aban, awt = erlang_a_metrics(A, N, aht_s, patience_s, asa_s)
+        else:
+            service = service_level(A, N, aht_s, asa_s)
+            aban = 0.0
+            awt  = erlang_c_awt(A, N, aht_s)
+        occ = A / N if N > 0 else 1.0
+
+        cond_sla  = (service >= sla_target)
+        cond_occ  = (occ <= max_occ) if use_strict_occ_cap else True
+        cond_aban = (aban <= abandon_max) if use_erlang_a else True
+        cond_awt  = (awt <= awt_max_s)
+
+        if cond_sla and cond_occ and cond_aban and cond_awt:
             break
         N += 1
 
@@ -125,7 +184,10 @@ def required_agents(calls_h: float, aht_s: float,
         "N_productive": N_productive,
         "N_scheduled": N_scheduled,
         "occupancy": float(A / N_productive) if N_productive > 0 else 0.0,
-        "service_level": float(service_level(A, N_productive, aht_s, asa_s))
+        "service_level": float(service),
+        "abandon_rate": float(aban if use_erlang_a else 0.0),
+        "avg_wait_s": float(awt),
+        "model": "Erlang-A" if use_erlang_a else "Erlang-C"
     }
 
 # ===== Features utils =====
@@ -221,15 +283,14 @@ def main():
     with open(OUT_JSON_DATAOUT, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
-    # ===== NUEVO: calcular productividad programada y shrinkage derivado =====
+    # ===== Productividad programada y shrinkage derivado =====
     prod_factor = scheduled_productivity_factor(
         SHIFT_HOURS, LUNCH_HOURS, BREAKS_MIN, AUX_RATE
     )
     derived_shrinkage = max(0.0, min(1.0, 1.0 - prod_factor))
-    # print opcional de control
     print(f"[Turno] factor_productividad={prod_factor:.4f} -> shrinkage_derivado={derived_shrinkage:.4f}")
 
-    # 7) Calcular Erlang-C y agentes (enteros)
+    # 7) Calcular Erlang (C/A) y agentes
     erlang_rows = []
     for row in payload:
         calls_h = int(row["pred_llamadas"])
@@ -240,7 +301,12 @@ def main():
             sla_target=SLA_TARGET,
             asa_s=ASA_TARGET_S,
             max_occ=MAX_OCC,
-            shrinkage=derived_shrinkage   # <--- usar shrinkage derivado del turno real
+            shrinkage=derived_shrinkage,
+            use_erlang_a=USE_ERLANG_A,
+            patience_s=MEAN_PATIENCE_S,
+            abandon_max=ABANDON_MAX,
+            awt_max_s=AWT_MAX_S,
+            use_strict_occ_cap=USE_STRICT_OCC_CAP
         )
         erlang_rows.append({
             "ts": row["ts"],
@@ -251,17 +317,23 @@ def main():
             "agentes_agendados": int(dims["N_scheduled"]),
             "occupancy": round(dims["occupancy"], 4),
             "service_level": round(dims["service_level"], 4),
+            "abandon_rate": round(dims["abandon_rate"], 4),
+            "avg_wait_s": round(dims["avg_wait_s"], 2),
+            "model": dims["model"],
             "params": {
                 "SLA_TARGET": SLA_TARGET,
                 "ASA_TARGET_S": ASA_TARGET_S,
                 "MAX_OCC": MAX_OCC,
-                "SHRINKAGE_INPUT": SHRINKAGE,            # valor legacy configurado
                 "SHIFT_HOURS": SHIFT_HOURS,
                 "LUNCH_HOURS": LUNCH_HOURS,
                 "BREAKS_MIN": BREAKS_MIN,
                 "AUX_RATE": AUX_RATE,
                 "DERIVED_SHRINKAGE": round(derived_shrinkage, 4),
-                "PRODUCTIVITY_FACTOR": round(prod_factor, 4)
+                "PRODUCTIVITY_FACTOR": round(prod_factor, 4),
+                "USE_ERLANG_A": USE_ERLANG_A,
+                "MEAN_PATIENCE_S": MEAN_PATIENCE_S,
+                "ABANDON_MAX": ABANDON_MAX,
+                "AWT_MAX_S": AWT_MAX_S
             }
         })
 
