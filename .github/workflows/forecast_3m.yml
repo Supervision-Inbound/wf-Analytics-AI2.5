@@ -38,7 +38,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/predicciones.json data_out/predicciones.csv data_out/predicciones.json public/last_update.json
-          # Fuerza commit incluso si los archivos principales no cambiaron (timestamp siempre cambia)
-          git commit -m "chore(forecast): actualización automática de predicciones" --allow-empty || true
+          git add \
+            public/predicciones.json \
+            data_out/predicciones.csv \
+            data_out/predicciones.json \
+            public/erlang_forecast.json \
+            data_out/erlang_forecast.json \
+            public/last_update.json
+          git commit -m "chore(forecast): actualización automática de predicciones + erlang" --allow-empty || true
           git push
+
