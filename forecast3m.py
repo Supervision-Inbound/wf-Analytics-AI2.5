@@ -40,7 +40,7 @@ DEFAULT_TMO = 180.0
 SLA_TARGET   = 0.90   # 90%
 ASA_TARGET_S = 22     # 22 segundos
 MAX_OCC      = 0.85   # 85% ocupación máxima
-SHRINKAGE    = 0.30   # legacy (mostrado en JSON; derivamos desde turnos)
+SHRINKAGE    = 0.30   # legacy (se mantiene visible en JSON)
 
 # ===== Turno/productividad (tu realidad operativa) =====
 # Turno 10h, 1h colación, 2 breaks de 15m, 15% auxiliares
@@ -56,9 +56,11 @@ ABANDON_MAX        = 0.06      # abandono máximo permitido (<= 6%)
 AWT_MAX_S          = 120.0     # tiempo medio de espera objetivo (segundos)
 USE_STRICT_OCC_CAP = True      # respetar tope de ocupación
 
-# ===== NUEVO: Pausa legal entre llamadas =====
-# Se suma al AHT efectivo de dimensionamiento (impacta directamente en Erlangs y N)
+# ===== Pausa legal entre llamadas =====
 INTERCALL_GAP_S    = 10.0
+
+# ===== NUEVO: Absentismo mensual aplicado a AGENDADOS =====
+ABSENTEEISM_RATE   = 0.23      # 23% mensual (colchón adicional de dotación)
 
 # --------------------------------
 
@@ -295,7 +297,9 @@ def main():
         SHIFT_HOURS, LUNCH_HOURS, BREAKS_MIN, AUX_RATE
     )
     derived_shrinkage = max(0.0, min(1.0, 1.0 - prod_factor))
-    print(f"[Turno] factor_productividad={prod_factor:.4f} -> shrinkage_derivado={derived_shrinkage:.4f}")
+    # ===== NUEVO: shrinkage efectivo con absentismo =====
+    effective_shrinkage = 1.0 - ( (1.0 - derived_shrinkage) * (1.0 - ABSENTEEISM_RATE) )
+    print(f"[Turno] productividad={prod_factor:.4f} -> shrinkage_derivado={derived_shrinkage:.4f} -> absentismo={ABSENTEEISM_RATE:.2f} -> shrinkage_efectivo={effective_shrinkage:.4f}")
 
     # 7) Calcular Erlang (C/A) y agentes
     erlang_rows = []
@@ -308,7 +312,7 @@ def main():
             sla_target=SLA_TARGET,
             asa_s=ASA_TARGET_S,
             max_occ=MAX_OCC,
-            shrinkage=derived_shrinkage,
+            shrinkage=effective_shrinkage,   # <<< usamos shrinkage EFECTIVO (turno + absentismo)
             use_erlang_a=USE_ERLANG_A,
             patience_s=MEAN_PATIENCE_S,
             abandon_max=ABANDON_MAX,
@@ -342,7 +346,9 @@ def main():
                 "MEAN_PATIENCE_S": MEAN_PATIENCE_S,
                 "ABANDON_MAX": ABANDON_MAX,
                 "AWT_MAX_S": AWT_MAX_S,
-                "INTERCALL_GAP_S": INTERCALL_GAP_S
+                "INTERCALL_GAP_S": INTERCALL_GAP_S,
+                "ABSENTEEISM_RATE": ABSENTEEISM_RATE,
+                "EFFECTIVE_SHRINKAGE": round(effective_shrinkage, 4)
             }
         })
 
@@ -369,3 +375,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
