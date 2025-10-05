@@ -5,7 +5,6 @@ import json
 import joblib
 import numpy as np
 import pandas as pd
-from datetime import datetime
 from utils_release import download_asset_from_latest
 
 # ---------- Parámetros ----------
@@ -16,17 +15,20 @@ ASSET_LLAMADAS = "modelo_llamadas.pkl"
 ASSET_TMO      = "modelo_tmo.pkl"
 
 MODELS_DIR = "models"
-OUT_CSV    = "data_out/predicciones.csv"
-OUT_JSON   = "public/predicciones.json"
 
-HOURS_AHEAD = 24 * 90     # 90 días
-FREQ        = "H"         # por hora
+OUT_CSV          = "data_out/predicciones.csv"
+OUT_JSON_PUBLIC  = "public/predicciones.json"
+OUT_JSON_DATAOUT = "data_out/predicciones.json"
+STAMP_JSON       = "public/last_update.json"   # <- timestamp para forzar cambios
 
-# NOMBRES DE TARGETS COMO EN EL ENTRENAMIENTO
-TARGET_LLAMADAS = "recibidos"  # <--- IMPORTANTÍSIMO
+HOURS_AHEAD = 24 * 90   # 90 días
+FREQ        = "H"       # por hora
+
+# Nombres tal como se entrenó
+TARGET_LLAMADAS = "recibidos"
 TARGET_TMO      = "tmo_seg"
 
-# Semillas por si no mantienes estado
+# Semillas si no hay estado
 DEFAULT_LL  = 100.0
 DEFAULT_TMO = 180.0
 # --------------------------------
@@ -77,7 +79,7 @@ def main():
     df = pd.DataFrame({"ts": idx})
     df = add_time_features(df)
 
-    # 4) Semillas simples
+    # 4) Semillas
     df["seed_ll"]  = DEFAULT_LL
     df["seed_tmo"] = DEFAULT_TMO
 
@@ -96,7 +98,7 @@ def main():
     df[f"{TARGET_TMO}_samehour_7d"] = df["seed_tmo"].shift(24*7)
 
     # 5) Predicción
-    X_ll = build_feature_matrix(df, TARGET_LLAMADAS).fillna(method="bfill").fillna(method="ffill")
+    X_ll  = build_feature_matrix(df, TARGET_LLAMADAS).fillna(method="bfill").fillna(method="ffill")
     pred_ll = mdl_ll.predict(X_ll)
 
     if mdl_tmo is not None:
@@ -111,12 +113,27 @@ def main():
         "pred_tmo_seg": np.maximum(0, pred_tmo).round(2)
     })
 
+    # 6) Guardar CSV y ambos JSON (public + data_out)
     out.to_csv(OUT_CSV, index=False)
-    with open(OUT_JSON, "w", encoding="utf-8") as f:
-        json.dump(out.to_dict(orient="records"), f, ensure_ascii=False, indent=2)
+    payload = out.to_dict(orient="records")
+    with open(OUT_JSON_PUBLIC, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    with open(OUT_JSON_DATAOUT, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+
+    # 7) Timestamp para forzar actualización SIEMPRE
+    stamp = {
+        "generated_at_utc": pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "horizon_hours": HOURS_AHEAD,
+        "records": len(out)
+    }
+    with open(STAMP_JSON, "w", encoding="utf-8") as f:
+        json.dump(stamp, f, ensure_ascii=False, indent=2)
 
     print(f"OK -> {OUT_CSV}")
-    print(f"OK -> {OUT_JSON}")
+    print(f"OK -> {OUT_JSON_PUBLIC}")
+    print(f"OK -> {OUT_JSON_DATAOUT}")
+    print(f"OK -> {STAMP_JSON}")
 
 if __name__ == "__main__":
     main()
