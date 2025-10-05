@@ -1,1072 +1,939 @@
 [
   {
-    "fecha":"2025-10-04",
-    "hora":"09:00",
-    "llamadas_recibidas":53.4739864599,
-    "tmo_pred_seg":254.4332510011,
-    "ejecutivos_requeridos":7
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"10:00",
-    "llamadas_recibidas":75.3460584352,
-    "tmo_pred_seg":261.5575754031,
-    "ejecutivos_requeridos":9
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"11:00",
-    "llamadas_recibidas":79.4487878506,
-    "tmo_pred_seg":264.1105804089,
-    "ejecutivos_requeridos":10
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"12:00",
-    "llamadas_recibidas":75.3984933164,
-    "tmo_pred_seg":263.3083833916,
-    "ejecutivos_requeridos":9
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"13:00",
-    "llamadas_recibidas":75.6120669325,
-    "tmo_pred_seg":264.3130039414,
-    "ejecutivos_requeridos":10
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"14:00",
-    "llamadas_recibidas":71.1139847682,
-    "tmo_pred_seg":264.3417487076,
-    "ejecutivos_requeridos":9
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"15:00",
-    "llamadas_recibidas":72.0165627091,
-    "tmo_pred_seg":264.624803076,
-    "ejecutivos_requeridos":9
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"16:00",
-    "llamadas_recibidas":75.868314279,
-    "tmo_pred_seg":264.7984842603,
-    "ejecutivos_requeridos":10
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"17:00",
-    "llamadas_recibidas":69.1620440211,
-    "tmo_pred_seg":263.0347855298,
-    "ejecutivos_requeridos":9
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"18:00",
-    "llamadas_recibidas":65.0548272809,
-    "tmo_pred_seg":256.2015544662,
-    "ejecutivos_requeridos":8
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"19:00",
-    "llamadas_recibidas":63.9054093396,
-    "tmo_pred_seg":249.2359214639,
-    "ejecutivos_requeridos":8
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"20:00",
-    "llamadas_recibidas":59.895137412,
-    "tmo_pred_seg":247.3229084552,
-    "ejecutivos_requeridos":8
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"21:00",
-    "llamadas_recibidas":41.6265995692,
-    "tmo_pred_seg":253.4047017327,
-    "ejecutivos_requeridos":6
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"22:00",
-    "llamadas_recibidas":19.963347272,
-    "tmo_pred_seg":255.5127167686,
-    "ejecutivos_requeridos":4
-  },
-  {
-    "fecha":"2025-10-04",
-    "hora":"23:00",
-    "llamadas_recibidas":10.5777971681,
-    "tmo_pred_seg":254.864321378,
-    "ejecutivos_requeridos":3
-  },
-  {
-    "fecha":"2025-10-05",
-    "hora":"00:00",
-    "llamadas_recibidas":2.5171184525,
-    "tmo_pred_seg":250.3814174305,
-    "ejecutivos_requeridos":2
-  },
-  {
-    "fecha":"2025-10-05",
-    "hora":"01:00",
-    "llamadas_recibidas":2.2790341398,
-    "tmo_pred_seg":250.5419673074,
-    "ejecutivos_requeridos":2
-  },
-  {
-    "fecha":"2025-10-05",
-    "hora":"02:00",
-    "llamadas_recibidas":1.9899544199,
-    "tmo_pred_seg":250.2682242482,
-    "ejecutivos_requeridos":2
-  },
-  {
-    "fecha":"2025-10-05",
-    "hora":"03:00",
-    "llamadas_recibidas":2.0695371739,
-    "tmo_pred_seg":249.5801974946,
-    "ejecutivos_requeridos":2
-  },
-  {
     "fecha":"2025-10-05",
     "hora":"04:00",
-    "llamadas_recibidas":2.2838850839,
-    "tmo_pred_seg":242.3566995362,
+    "llamadas_recibidas":3.7009789647,
+    "tmo_pred_seg":250.5085930317,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-05",
     "hora":"05:00",
-    "llamadas_recibidas":3.8980832975,
-    "tmo_pred_seg":240.2916422274,
+    "llamadas_recibidas":4.7924436341,
+    "tmo_pred_seg":248.9653172886,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-05",
     "hora":"06:00",
-    "llamadas_recibidas":9.4816627198,
-    "tmo_pred_seg":238.5346927609,
-    "ejecutivos_requeridos":3
+    "llamadas_recibidas":19.1624116666,
+    "tmo_pred_seg":246.7022118509,
+    "ejecutivos_requeridos":4
   },
   {
     "fecha":"2025-10-05",
     "hora":"07:00",
-    "llamadas_recibidas":45.9087958978,
-    "tmo_pred_seg":257.7642754723,
-    "ejecutivos_requeridos":7
+    "llamadas_recibidas":55.3369472567,
+    "tmo_pred_seg":259.6714970173,
+    "ejecutivos_requeridos":8
   },
   {
     "fecha":"2025-10-05",
     "hora":"08:00",
-    "llamadas_recibidas":63.4546448866,
-    "tmo_pred_seg":261.8907067558,
-    "ejecutivos_requeridos":8
+    "llamadas_recibidas":91.5822457489,
+    "tmo_pred_seg":260.2480857026,
+    "ejecutivos_requeridos":11
   },
   {
     "fecha":"2025-10-05",
     "hora":"09:00",
-    "llamadas_recibidas":74.0171964184,
-    "tmo_pred_seg":259.0067583683,
-    "ejecutivos_requeridos":9
+    "llamadas_recibidas":95.1832075717,
+    "tmo_pred_seg":260.5538152492,
+    "ejecutivos_requeridos":11
   },
   {
     "fecha":"2025-10-05",
     "hora":"10:00",
-    "llamadas_recibidas":66.6231197298,
-    "tmo_pred_seg":263.6600846267,
-    "ejecutivos_requeridos":9
+    "llamadas_recibidas":97.8571680414,
+    "tmo_pred_seg":262.7458877204,
+    "ejecutivos_requeridos":11
   },
   {
     "fecha":"2025-10-05",
     "hora":"11:00",
-    "llamadas_recibidas":58.9254347711,
-    "tmo_pred_seg":262.8341606899,
-    "ejecutivos_requeridos":8
+    "llamadas_recibidas":86.6886779304,
+    "tmo_pred_seg":263.7127344697,
+    "ejecutivos_requeridos":11
   },
   {
     "fecha":"2025-10-05",
     "hora":"12:00",
-    "llamadas_recibidas":51.1466539095,
-    "tmo_pred_seg":264.3733916055,
-    "ejecutivos_requeridos":7
+    "llamadas_recibidas":79.8159895874,
+    "tmo_pred_seg":264.0491667873,
+    "ejecutivos_requeridos":10
   },
   {
     "fecha":"2025-10-05",
     "hora":"13:00",
-    "llamadas_recibidas":47.3519646566,
-    "tmo_pred_seg":266.1635825938,
-    "ejecutivos_requeridos":7
+    "llamadas_recibidas":75.0802351632,
+    "tmo_pred_seg":264.8418405784,
+    "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-05",
     "hora":"14:00",
-    "llamadas_recibidas":50.225737147,
-    "tmo_pred_seg":266.5101829454,
-    "ejecutivos_requeridos":7
+    "llamadas_recibidas":75.0757110984,
+    "tmo_pred_seg":264.793286368,
+    "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-05",
     "hora":"15:00",
-    "llamadas_recibidas":51.9613228577,
-    "tmo_pred_seg":265.0219123433,
-    "ejecutivos_requeridos":7
+    "llamadas_recibidas":74.1866734929,
+    "tmo_pred_seg":264.1983389937,
+    "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-05",
     "hora":"16:00",
-    "llamadas_recibidas":54.1731485861,
-    "tmo_pred_seg":265.0715923171,
-    "ejecutivos_requeridos":8
+    "llamadas_recibidas":74.6238197602,
+    "tmo_pred_seg":263.344105714,
+    "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-05",
     "hora":"17:00",
-    "llamadas_recibidas":53.6978148627,
-    "tmo_pred_seg":263.062842161,
-    "ejecutivos_requeridos":7
+    "llamadas_recibidas":59.8681868521,
+    "tmo_pred_seg":261.7166097375,
+    "ejecutivos_requeridos":8
   },
   {
     "fecha":"2025-10-05",
     "hora":"18:00",
-    "llamadas_recibidas":53.0710300729,
-    "tmo_pred_seg":252.4661501127,
+    "llamadas_recibidas":55.1469587636,
+    "tmo_pred_seg":255.0279880375,
     "ejecutivos_requeridos":7
   },
   {
     "fecha":"2025-10-05",
     "hora":"19:00",
-    "llamadas_recibidas":50.9837614622,
-    "tmo_pred_seg":247.3486110519,
+    "llamadas_recibidas":50.4553095824,
+    "tmo_pred_seg":247.8030017051,
     "ejecutivos_requeridos":7
   },
   {
     "fecha":"2025-10-05",
     "hora":"20:00",
-    "llamadas_recibidas":43.268567834,
-    "tmo_pred_seg":245.9977489942,
+    "llamadas_recibidas":45.7131876508,
+    "tmo_pred_seg":248.3489268839,
     "ejecutivos_requeridos":6
   },
   {
     "fecha":"2025-10-05",
     "hora":"21:00",
-    "llamadas_recibidas":32.4283534475,
-    "tmo_pred_seg":256.4777172585,
-    "ejecutivos_requeridos":5
+    "llamadas_recibidas":34.8942688442,
+    "tmo_pred_seg":256.1079820038,
+    "ejecutivos_requeridos":6
   },
   {
     "fecha":"2025-10-05",
     "hora":"22:00",
-    "llamadas_recibidas":12.5640714202,
-    "tmo_pred_seg":259.4759658363,
+    "llamadas_recibidas":15.5222360569,
+    "tmo_pred_seg":255.9562545887,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-05",
     "hora":"23:00",
-    "llamadas_recibidas":8.8541530576,
-    "tmo_pred_seg":259.0223606124,
+    "llamadas_recibidas":9.7291957377,
+    "tmo_pred_seg":254.4888250487,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-06",
     "hora":"00:00",
-    "llamadas_recibidas":2.2870177305,
-    "tmo_pred_seg":254.5813352587,
+    "llamadas_recibidas":2.8111350141,
+    "tmo_pred_seg":250.6576216093,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-06",
     "hora":"01:00",
-    "llamadas_recibidas":2.2259505292,
-    "tmo_pred_seg":253.6461558755,
+    "llamadas_recibidas":2.4136684663,
+    "tmo_pred_seg":250.7529644039,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-06",
     "hora":"02:00",
-    "llamadas_recibidas":1.9238338664,
-    "tmo_pred_seg":252.3746106601,
+    "llamadas_recibidas":2.4258050456,
+    "tmo_pred_seg":251.9510840827,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-06",
     "hora":"03:00",
-    "llamadas_recibidas":2.2748886041,
-    "tmo_pred_seg":250.4290716337,
+    "llamadas_recibidas":2.7080676664,
+    "tmo_pred_seg":251.9578873312,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-06",
     "hora":"04:00",
-    "llamadas_recibidas":3.7923005646,
-    "tmo_pred_seg":242.0072813713,
+    "llamadas_recibidas":4.5369170774,
+    "tmo_pred_seg":242.2920031765,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-06",
     "hora":"05:00",
-    "llamadas_recibidas":20.8401775054,
-    "tmo_pred_seg":241.6327555334,
+    "llamadas_recibidas":25.7969625286,
+    "tmo_pred_seg":241.562539686,
     "ejecutivos_requeridos":4
   },
   {
     "fecha":"2025-10-06",
     "hora":"06:00",
-    "llamadas_recibidas":50.055320395,
-    "tmo_pred_seg":242.2215802612,
+    "llamadas_recibidas":55.7435499806,
+    "tmo_pred_seg":241.9307865519,
     "ejecutivos_requeridos":7
   },
   {
     "fecha":"2025-10-06",
     "hora":"07:00",
-    "llamadas_recibidas":143.9816957579,
-    "tmo_pred_seg":269.4772950636,
+    "llamadas_recibidas":153.5899552776,
+    "tmo_pred_seg":266.6212298556,
     "ejecutivos_requeridos":16
   },
   {
     "fecha":"2025-10-06",
     "hora":"08:00",
-    "llamadas_recibidas":287.5438960175,
-    "tmo_pred_seg":285.4210817302,
-    "ejecutivos_requeridos":29
+    "llamadas_recibidas":312.6894376947,
+    "tmo_pred_seg":284.556030563,
+    "ejecutivos_requeridos":31
   },
   {
     "fecha":"2025-10-06",
     "hora":"09:00",
-    "llamadas_recibidas":321.7427046491,
-    "tmo_pred_seg":292.4450057447,
-    "ejecutivos_requeridos":33
+    "llamadas_recibidas":328.6537569566,
+    "tmo_pred_seg":290.9568629641,
+    "ejecutivos_requeridos":34
   },
   {
     "fecha":"2025-10-06",
     "hora":"10:00",
-    "llamadas_recibidas":288.0189512988,
-    "tmo_pred_seg":288.528001634,
-    "ejecutivos_requeridos":30
+    "llamadas_recibidas":299.9970159754,
+    "tmo_pred_seg":286.5890064226,
+    "ejecutivos_requeridos":31
   },
   {
     "fecha":"2025-10-06",
     "hora":"11:00",
-    "llamadas_recibidas":266.9069819487,
-    "tmo_pred_seg":288.4536706042,
+    "llamadas_recibidas":274.030616882,
+    "tmo_pred_seg":286.8103223376,
     "ejecutivos_requeridos":28
   },
   {
     "fecha":"2025-10-06",
     "hora":"12:00",
-    "llamadas_recibidas":222.4575926927,
-    "tmo_pred_seg":286.1040067747,
-    "ejecutivos_requeridos":24
+    "llamadas_recibidas":235.3818062312,
+    "tmo_pred_seg":284.9836366543,
+    "ejecutivos_requeridos":25
   },
   {
     "fecha":"2025-10-06",
     "hora":"13:00",
-    "llamadas_recibidas":220.0806010625,
-    "tmo_pred_seg":288.9062779468,
+    "llamadas_recibidas":228.917487143,
+    "tmo_pred_seg":289.0426076947,
     "ejecutivos_requeridos":24
   },
   {
     "fecha":"2025-10-06",
     "hora":"14:00",
-    "llamadas_recibidas":208.0653953643,
-    "tmo_pred_seg":291.8431012472,
+    "llamadas_recibidas":211.850365508,
+    "tmo_pred_seg":291.1990170843,
     "ejecutivos_requeridos":23
   },
   {
     "fecha":"2025-10-06",
     "hora":"15:00",
-    "llamadas_recibidas":190.8968785116,
-    "tmo_pred_seg":291.4043403355,
+    "llamadas_recibidas":193.8136603049,
+    "tmo_pred_seg":291.2529012944,
     "ejecutivos_requeridos":21
   },
   {
     "fecha":"2025-10-06",
     "hora":"16:00",
-    "llamadas_recibidas":179.1064656239,
-    "tmo_pred_seg":291.6946664781,
+    "llamadas_recibidas":182.9410891603,
+    "tmo_pred_seg":291.4405224143,
     "ejecutivos_requeridos":20
   },
   {
     "fecha":"2025-10-06",
     "hora":"17:00",
-    "llamadas_recibidas":154.741979812,
-    "tmo_pred_seg":280.2587862523,
-    "ejecutivos_requeridos":17
+    "llamadas_recibidas":157.8720816677,
+    "tmo_pred_seg":281.8625524039,
+    "ejecutivos_requeridos":18
   },
   {
     "fecha":"2025-10-06",
     "hora":"18:00",
-    "llamadas_recibidas":129.158374078,
-    "tmo_pred_seg":273.9283349875,
-    "ejecutivos_requeridos":15
+    "llamadas_recibidas":139.6147491142,
+    "tmo_pred_seg":275.8746250663,
+    "ejecutivos_requeridos":16
   },
   {
     "fecha":"2025-10-06",
     "hora":"19:00",
-    "llamadas_recibidas":81.0440420888,
-    "tmo_pred_seg":270.4400632621,
-    "ejecutivos_requeridos":10
+    "llamadas_recibidas":87.1942048645,
+    "tmo_pred_seg":270.850976926,
+    "ejecutivos_requeridos":11
   },
   {
     "fecha":"2025-10-06",
     "hora":"20:00",
-    "llamadas_recibidas":61.8707498835,
-    "tmo_pred_seg":270.4111716743,
+    "llamadas_recibidas":61.654708414,
+    "tmo_pred_seg":272.032495343,
     "ejecutivos_requeridos":8
   },
   {
     "fecha":"2025-10-06",
     "hora":"21:00",
-    "llamadas_recibidas":37.5193563972,
-    "tmo_pred_seg":268.3832236545,
+    "llamadas_recibidas":39.5747225464,
+    "tmo_pred_seg":267.0117023568,
     "ejecutivos_requeridos":6
   },
   {
     "fecha":"2025-10-06",
     "hora":"22:00",
-    "llamadas_recibidas":18.7278209349,
-    "tmo_pred_seg":264.9666584112,
+    "llamadas_recibidas":18.5661949132,
+    "tmo_pred_seg":263.5676135982,
     "ejecutivos_requeridos":4
   },
   {
     "fecha":"2025-10-06",
     "hora":"23:00",
-    "llamadas_recibidas":10.7150103766,
-    "tmo_pred_seg":262.1162710371,
+    "llamadas_recibidas":10.7114210088,
+    "tmo_pred_seg":261.631298003,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-07",
     "hora":"00:00",
-    "llamadas_recibidas":2.0856713999,
-    "tmo_pred_seg":257.7278388001,
+    "llamadas_recibidas":2.0846781684,
+    "tmo_pred_seg":257.7071904374,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-07",
     "hora":"01:00",
-    "llamadas_recibidas":1.7646941962,
-    "tmo_pred_seg":255.5626375696,
+    "llamadas_recibidas":1.8596216168,
+    "tmo_pred_seg":255.4267747835,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-07",
     "hora":"02:00",
-    "llamadas_recibidas":2.0014104301,
-    "tmo_pred_seg":254.5828138489,
+    "llamadas_recibidas":1.9688667821,
+    "tmo_pred_seg":254.3791527778,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-07",
     "hora":"03:00",
-    "llamadas_recibidas":3.5642300861,
-    "tmo_pred_seg":252.3264120654,
+    "llamadas_recibidas":3.9522362841,
+    "tmo_pred_seg":252.2808753079,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-07",
     "hora":"04:00",
-    "llamadas_recibidas":14.3352231407,
-    "tmo_pred_seg":244.1733826255,
+    "llamadas_recibidas":14.0187609432,
+    "tmo_pred_seg":243.8897950849,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-07",
     "hora":"05:00",
-    "llamadas_recibidas":42.901423736,
-    "tmo_pred_seg":244.6316964744,
+    "llamadas_recibidas":42.8374894038,
+    "tmo_pred_seg":244.1154886656,
     "ejecutivos_requeridos":6
   },
   {
     "fecha":"2025-10-07",
     "hora":"06:00",
-    "llamadas_recibidas":113.0206599863,
-    "tmo_pred_seg":250.2830086936,
+    "llamadas_recibidas":112.4292320375,
+    "tmo_pred_seg":250.1268051501,
     "ejecutivos_requeridos":12
   },
   {
     "fecha":"2025-10-07",
     "hora":"07:00",
-    "llamadas_recibidas":259.4540069711,
-    "tmo_pred_seg":277.1453079337,
-    "ejecutivos_requeridos":26
+    "llamadas_recibidas":265.1038164921,
+    "tmo_pred_seg":276.775010265,
+    "ejecutivos_requeridos":27
   },
   {
     "fecha":"2025-10-07",
     "hora":"08:00",
-    "llamadas_recibidas":361.3289252849,
-    "tmo_pred_seg":298.3601021771,
+    "llamadas_recibidas":364.3119520559,
+    "tmo_pred_seg":298.4473473033,
     "ejecutivos_requeridos":38
   },
   {
     "fecha":"2025-10-07",
     "hora":"09:00",
-    "llamadas_recibidas":377.761392882,
-    "tmo_pred_seg":290.8350574493,
+    "llamadas_recibidas":380.4755604538,
+    "tmo_pred_seg":290.7061331484,
     "ejecutivos_requeridos":39
   },
   {
     "fecha":"2025-10-07",
     "hora":"10:00",
-    "llamadas_recibidas":359.0095134294,
-    "tmo_pred_seg":290.6844451119,
+    "llamadas_recibidas":361.2727574593,
+    "tmo_pred_seg":290.8072608173,
     "ejecutivos_requeridos":37
   },
   {
     "fecha":"2025-10-07",
     "hora":"11:00",
-    "llamadas_recibidas":297.2959997646,
-    "tmo_pred_seg":288.3435800402,
-    "ejecutivos_requeridos":31
+    "llamadas_recibidas":296.4097005379,
+    "tmo_pred_seg":288.5525778312,
+    "ejecutivos_requeridos":30
   },
   {
     "fecha":"2025-10-07",
     "hora":"12:00",
-    "llamadas_recibidas":272.0349288756,
-    "tmo_pred_seg":287.0634982735,
+    "llamadas_recibidas":270.8014664507,
+    "tmo_pred_seg":287.7276777227,
     "ejecutivos_requeridos":28
   },
   {
     "fecha":"2025-10-07",
     "hora":"13:00",
-    "llamadas_recibidas":247.9569394083,
-    "tmo_pred_seg":291.8735432561,
+    "llamadas_recibidas":246.0839660565,
+    "tmo_pred_seg":292.0946562657,
     "ejecutivos_requeridos":26
   },
   {
     "fecha":"2025-10-07",
     "hora":"14:00",
-    "llamadas_recibidas":242.3071120402,
-    "tmo_pred_seg":292.3845926626,
+    "llamadas_recibidas":241.0106731956,
+    "tmo_pred_seg":292.3140986178,
     "ejecutivos_requeridos":26
   },
   {
     "fecha":"2025-10-07",
     "hora":"15:00",
-    "llamadas_recibidas":223.2270658422,
-    "tmo_pred_seg":291.4282681746,
+    "llamadas_recibidas":225.0565831766,
+    "tmo_pred_seg":291.2675847168,
     "ejecutivos_requeridos":24
   },
   {
     "fecha":"2025-10-07",
     "hora":"16:00",
-    "llamadas_recibidas":207.7697534653,
-    "tmo_pred_seg":290.0487520471,
+    "llamadas_recibidas":210.1669258671,
+    "tmo_pred_seg":289.7890944265,
     "ejecutivos_requeridos":23
   },
   {
     "fecha":"2025-10-07",
     "hora":"17:00",
-    "llamadas_recibidas":185.3448717838,
-    "tmo_pred_seg":284.0457303701,
+    "llamadas_recibidas":185.0640571427,
+    "tmo_pred_seg":283.9099417599,
     "ejecutivos_requeridos":20
   },
   {
     "fecha":"2025-10-07",
     "hora":"18:00",
-    "llamadas_recibidas":161.6881515537,
-    "tmo_pred_seg":284.6860348345,
+    "llamadas_recibidas":161.6845876098,
+    "tmo_pred_seg":284.4407611793,
     "ejecutivos_requeridos":18
   },
   {
     "fecha":"2025-10-07",
     "hora":"19:00",
-    "llamadas_recibidas":93.3542620945,
-    "tmo_pred_seg":284.8060173489,
+    "llamadas_recibidas":93.2341488999,
+    "tmo_pred_seg":284.2198248171,
     "ejecutivos_requeridos":12
   },
   {
     "fecha":"2025-10-07",
     "hora":"20:00",
-    "llamadas_recibidas":66.8422272226,
-    "tmo_pred_seg":282.629768031,
+    "llamadas_recibidas":66.8164190256,
+    "tmo_pred_seg":282.5508060521,
     "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-07",
     "hora":"21:00",
     "llamadas_recibidas":41.0022814707,
-    "tmo_pred_seg":275.405604577,
+    "tmo_pred_seg":275.6203527957,
     "ejecutivos_requeridos":6
   },
   {
     "fecha":"2025-10-07",
     "hora":"22:00",
-    "llamadas_recibidas":20.3450485313,
-    "tmo_pred_seg":267.237352826,
+    "llamadas_recibidas":20.2843444649,
+    "tmo_pred_seg":267.3154373956,
     "ejecutivos_requeridos":4
   },
   {
     "fecha":"2025-10-07",
     "hora":"23:00",
-    "llamadas_recibidas":9.2854355709,
-    "tmo_pred_seg":265.8143202599,
+    "llamadas_recibidas":9.3020593935,
+    "tmo_pred_seg":265.8215748424,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-08",
     "hora":"00:00",
-    "llamadas_recibidas":1.8875751244,
-    "tmo_pred_seg":259.8906255847,
+    "llamadas_recibidas":1.8561355158,
+    "tmo_pred_seg":259.886183822,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-08",
     "hora":"01:00",
-    "llamadas_recibidas":1.2522703796,
+    "llamadas_recibidas":1.3720401172,
     "tmo_pred_seg":258.2262338623,
     "ejecutivos_requeridos":1
   },
   {
     "fecha":"2025-10-08",
     "hora":"02:00",
-    "llamadas_recibidas":1.2927525599,
-    "tmo_pred_seg":254.9542701495,
+    "llamadas_recibidas":1.2285457407,
+    "tmo_pred_seg":255.0432052558,
     "ejecutivos_requeridos":1
   },
   {
     "fecha":"2025-10-08",
     "hora":"03:00",
-    "llamadas_recibidas":3.7239382146,
+    "llamadas_recibidas":3.6913760493,
     "tmo_pred_seg":253.4570807614,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-08",
     "hora":"04:00",
-    "llamadas_recibidas":14.6816590455,
-    "tmo_pred_seg":245.9828068001,
+    "llamadas_recibidas":15.2867898036,
+    "tmo_pred_seg":245.6065337052,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-08",
     "hora":"05:00",
-    "llamadas_recibidas":49.0116391879,
+    "llamadas_recibidas":72.1574382391,
     "tmo_pred_seg":246.629474948,
-    "ejecutivos_requeridos":7
+    "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-08",
     "hora":"06:00",
-    "llamadas_recibidas":124.9792956119,
+    "llamadas_recibidas":139.0586930666,
     "tmo_pred_seg":251.2955645913,
-    "ejecutivos_requeridos":13
+    "ejecutivos_requeridos":14
   },
   {
     "fecha":"2025-10-08",
     "hora":"07:00",
-    "llamadas_recibidas":299.7292546893,
-    "tmo_pred_seg":284.944721475,
-    "ejecutivos_requeridos":30
+    "llamadas_recibidas":309.6139293776,
+    "tmo_pred_seg":285.0193788394,
+    "ejecutivos_requeridos":31
   },
   {
     "fecha":"2025-10-08",
     "hora":"08:00",
-    "llamadas_recibidas":414.9353605449,
-    "tmo_pred_seg":301.597296472,
+    "llamadas_recibidas":419.397820799,
+    "tmo_pred_seg":301.6240500097,
     "ejecutivos_requeridos":44
   },
   {
     "fecha":"2025-10-08",
     "hora":"09:00",
-    "llamadas_recibidas":408.2553506932,
-    "tmo_pred_seg":294.8319671285,
+    "llamadas_recibidas":408.5864765504,
+    "tmo_pred_seg":294.9249732208,
     "ejecutivos_requeridos":42
   },
   {
     "fecha":"2025-10-08",
     "hora":"10:00",
-    "llamadas_recibidas":370.3057130821,
-    "tmo_pred_seg":291.9573945597,
+    "llamadas_recibidas":369.4578045734,
+    "tmo_pred_seg":293.4530331687,
     "ejecutivos_requeridos":38
   },
   {
     "fecha":"2025-10-08",
     "hora":"11:00",
-    "llamadas_recibidas":315.9445031681,
-    "tmo_pred_seg":289.3331293164,
-    "ejecutivos_requeridos":32
+    "llamadas_recibidas":317.8828064609,
+    "tmo_pred_seg":290.114440957,
+    "ejecutivos_requeridos":33
   },
   {
     "fecha":"2025-10-08",
     "hora":"12:00",
-    "llamadas_recibidas":280.1775434851,
-    "tmo_pred_seg":290.6984925966,
+    "llamadas_recibidas":280.9492759443,
+    "tmo_pred_seg":290.8017346472,
     "ejecutivos_requeridos":29
   },
   {
     "fecha":"2025-10-08",
     "hora":"13:00",
-    "llamadas_recibidas":257.4125761543,
-    "tmo_pred_seg":293.5263976625,
+    "llamadas_recibidas":257.2528104133,
+    "tmo_pred_seg":293.5284672737,
     "ejecutivos_requeridos":27
   },
   {
     "fecha":"2025-10-08",
     "hora":"14:00",
-    "llamadas_recibidas":240.6504043162,
-    "tmo_pred_seg":293.0036506862,
+    "llamadas_recibidas":240.2270105906,
+    "tmo_pred_seg":293.049643402,
     "ejecutivos_requeridos":26
   },
   {
     "fecha":"2025-10-08",
     "hora":"15:00",
-    "llamadas_recibidas":225.7276658175,
-    "tmo_pred_seg":293.1482762487,
+    "llamadas_recibidas":225.2940603456,
+    "tmo_pred_seg":293.3274086924,
     "ejecutivos_requeridos":24
   },
   {
     "fecha":"2025-10-08",
     "hora":"16:00",
     "llamadas_recibidas":212.3183234243,
-    "tmo_pred_seg":291.5978538552,
+    "tmo_pred_seg":291.7738972853,
     "ejecutivos_requeridos":23
   },
   {
     "fecha":"2025-10-08",
     "hora":"17:00",
-    "llamadas_recibidas":196.2250340254,
-    "tmo_pred_seg":285.8867795583,
+    "llamadas_recibidas":197.9848106979,
+    "tmo_pred_seg":285.9354396063,
     "ejecutivos_requeridos":21
   },
   {
     "fecha":"2025-10-08",
     "hora":"18:00",
-    "llamadas_recibidas":166.9355455606,
-    "tmo_pred_seg":286.6896734764,
-    "ejecutivos_requeridos":19
+    "llamadas_recibidas":162.5979775547,
+    "tmo_pred_seg":287.4211161991,
+    "ejecutivos_requeridos":18
   },
   {
     "fecha":"2025-10-08",
     "hora":"19:00",
-    "llamadas_recibidas":94.2358788791,
-    "tmo_pred_seg":288.3732080329,
+    "llamadas_recibidas":94.8287253987,
+    "tmo_pred_seg":288.3787611101,
     "ejecutivos_requeridos":12
   },
   {
     "fecha":"2025-10-08",
     "hora":"20:00",
-    "llamadas_recibidas":67.0241950198,
-    "tmo_pred_seg":285.053014042,
+    "llamadas_recibidas":66.8893585485,
+    "tmo_pred_seg":284.8386781367,
     "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-08",
     "hora":"21:00",
-    "llamadas_recibidas":41.5818315646,
-    "tmo_pred_seg":279.3334099155,
+    "llamadas_recibidas":41.7052044792,
+    "tmo_pred_seg":279.0234946927,
     "ejecutivos_requeridos":7
   },
   {
     "fecha":"2025-10-08",
     "hora":"22:00",
-    "llamadas_recibidas":28.320667074,
-    "tmo_pred_seg":269.5050965234,
+    "llamadas_recibidas":28.3357207411,
+    "tmo_pred_seg":269.9054013629,
     "ejecutivos_requeridos":5
   },
   {
     "fecha":"2025-10-08",
     "hora":"23:00",
-    "llamadas_recibidas":9.5464222632,
-    "tmo_pred_seg":267.4108694275,
+    "llamadas_recibidas":9.5732493196,
+    "tmo_pred_seg":267.2697419596,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-09",
     "hora":"00:00",
-    "llamadas_recibidas":2.0796482044,
-    "tmo_pred_seg":262.6726596387,
+    "llamadas_recibidas":2.4605766749,
+    "tmo_pred_seg":262.9641798066,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-09",
     "hora":"01:00",
-    "llamadas_recibidas":1.5719509545,
-    "tmo_pred_seg":259.0976679496,
+    "llamadas_recibidas":2.0690461079,
+    "tmo_pred_seg":258.9402834931,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-09",
     "hora":"02:00",
-    "llamadas_recibidas":1.9845169782,
-    "tmo_pred_seg":255.6561586601,
+    "llamadas_recibidas":2.0411603749,
+    "tmo_pred_seg":255.6425781369,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-09",
     "hora":"03:00",
-    "llamadas_recibidas":8.6751984289,
-    "tmo_pred_seg":253.666817739,
+    "llamadas_recibidas":8.7532714611,
+    "tmo_pred_seg":253.6613566843,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-09",
     "hora":"04:00",
-    "llamadas_recibidas":21.6337714225,
-    "tmo_pred_seg":246.5732148873,
+    "llamadas_recibidas":22.4721355333,
+    "tmo_pred_seg":246.6400542007,
     "ejecutivos_requeridos":4
   },
   {
     "fecha":"2025-10-09",
     "hora":"05:00",
-    "llamadas_recibidas":86.5142348969,
-    "tmo_pred_seg":248.2455324716,
+    "llamadas_recibidas":87.054471039,
+    "tmo_pred_seg":248.1669441031,
     "ejecutivos_requeridos":10
   },
   {
     "fecha":"2025-10-09",
     "hora":"06:00",
-    "llamadas_recibidas":185.5651295138,
-    "tmo_pred_seg":252.707278533,
+    "llamadas_recibidas":185.7292074389,
+    "tmo_pred_seg":252.8270092689,
     "ejecutivos_requeridos":18
   },
   {
     "fecha":"2025-10-09",
     "hora":"07:00",
-    "llamadas_recibidas":347.6867874214,
-    "tmo_pred_seg":288.3940700013,
+    "llamadas_recibidas":347.4737015974,
+    "tmo_pred_seg":288.455788469,
     "ejecutivos_requeridos":35
   },
   {
     "fecha":"2025-10-09",
     "hora":"08:00",
-    "llamadas_recibidas":438.0912052126,
-    "tmo_pred_seg":300.3458019577,
+    "llamadas_recibidas":438.2500792262,
+    "tmo_pred_seg":300.4148109711,
     "ejecutivos_requeridos":46
   },
   {
     "fecha":"2025-10-09",
     "hora":"09:00",
-    "llamadas_recibidas":418.4857428871,
-    "tmo_pred_seg":295.114653937,
+    "llamadas_recibidas":419.6149567149,
+    "tmo_pred_seg":295.1217246848,
     "ejecutivos_requeridos":43
   },
   {
     "fecha":"2025-10-09",
     "hora":"10:00",
-    "llamadas_recibidas":356.5062005889,
-    "tmo_pred_seg":294.4703447829,
+    "llamadas_recibidas":356.5985743388,
+    "tmo_pred_seg":295.1692690663,
     "ejecutivos_requeridos":37
   },
   {
     "fecha":"2025-10-09",
     "hora":"11:00",
-    "llamadas_recibidas":318.0055336026,
-    "tmo_pred_seg":292.2749316145,
+    "llamadas_recibidas":318.4009310329,
+    "tmo_pred_seg":293.8608586472,
     "ejecutivos_requeridos":33
   },
   {
     "fecha":"2025-10-09",
     "hora":"12:00",
-    "llamadas_recibidas":279.0140397257,
-    "tmo_pred_seg":292.4192900058,
+    "llamadas_recibidas":280.7948382007,
+    "tmo_pred_seg":293.1751645314,
     "ejecutivos_requeridos":29
   },
   {
     "fecha":"2025-10-09",
     "hora":"13:00",
-    "llamadas_recibidas":248.9491725056,
-    "tmo_pred_seg":295.5761329818,
+    "llamadas_recibidas":255.5864559766,
+    "tmo_pred_seg":295.8143845591,
     "ejecutivos_requeridos":27
   },
   {
     "fecha":"2025-10-09",
     "hora":"14:00",
-    "llamadas_recibidas":238.9599925653,
-    "tmo_pred_seg":295.8102877078,
+    "llamadas_recibidas":239.8730680613,
+    "tmo_pred_seg":295.8302525739,
     "ejecutivos_requeridos":26
   },
   {
     "fecha":"2025-10-09",
     "hora":"15:00",
     "llamadas_recibidas":222.7516580782,
-    "tmo_pred_seg":295.8051690283,
+    "tmo_pred_seg":295.7900593577,
     "ejecutivos_requeridos":24
   },
   {
     "fecha":"2025-10-09",
     "hora":"16:00",
-    "llamadas_recibidas":209.9238155131,
-    "tmo_pred_seg":292.6972919465,
+    "llamadas_recibidas":209.8616382961,
+    "tmo_pred_seg":292.6671861512,
     "ejecutivos_requeridos":23
   },
   {
     "fecha":"2025-10-09",
     "hora":"17:00",
-    "llamadas_recibidas":194.5648290538,
-    "tmo_pred_seg":286.3254660233,
+    "llamadas_recibidas":194.5467448148,
+    "tmo_pred_seg":286.4319895833,
     "ejecutivos_requeridos":21
   },
   {
     "fecha":"2025-10-09",
     "hora":"18:00",
-    "llamadas_recibidas":160.3191747196,
-    "tmo_pred_seg":290.5482257397,
+    "llamadas_recibidas":160.2366540575,
+    "tmo_pred_seg":290.6078505133,
     "ejecutivos_requeridos":18
   },
   {
     "fecha":"2025-10-09",
     "hora":"19:00",
-    "llamadas_recibidas":95.004298831,
-    "tmo_pred_seg":289.0149976021,
+    "llamadas_recibidas":95.0063554,
+    "tmo_pred_seg":289.0202606566,
     "ejecutivos_requeridos":12
   },
   {
     "fecha":"2025-10-09",
     "hora":"20:00",
-    "llamadas_recibidas":67.292233835,
-    "tmo_pred_seg":286.0092197822,
+    "llamadas_recibidas":67.2909674382,
+    "tmo_pred_seg":285.9646910161,
     "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-09",
     "hora":"21:00",
-    "llamadas_recibidas":40.9529857035,
-    "tmo_pred_seg":279.0565936275,
+    "llamadas_recibidas":41.0594859396,
+    "tmo_pred_seg":279.0925670713,
     "ejecutivos_requeridos":6
   },
   {
     "fecha":"2025-10-09",
     "hora":"22:00",
-    "llamadas_recibidas":30.5080854785,
+    "llamadas_recibidas":30.4849151124,
     "tmo_pred_seg":269.9277700186,
     "ejecutivos_requeridos":5
   },
   {
     "fecha":"2025-10-09",
     "hora":"23:00",
-    "llamadas_recibidas":10.5666893033,
+    "llamadas_recibidas":10.4379204803,
     "tmo_pred_seg":268.3903523625,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-10",
     "hora":"00:00",
-    "llamadas_recibidas":3.1943397793,
-    "tmo_pred_seg":262.1596754245,
+    "llamadas_recibidas":3.2238442141,
+    "tmo_pred_seg":262.1529723273,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-10",
     "hora":"01:00",
-    "llamadas_recibidas":2.7677448083,
+    "llamadas_recibidas":2.4988096411,
     "tmo_pred_seg":258.7972781121,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-10",
     "hora":"02:00",
-    "llamadas_recibidas":2.1249248594,
-    "tmo_pred_seg":255.9101259859,
+    "llamadas_recibidas":2.1663114969,
+    "tmo_pred_seg":255.9789229671,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-10",
     "hora":"03:00",
-    "llamadas_recibidas":11.4086431736,
-    "tmo_pred_seg":253.7871344305,
+    "llamadas_recibidas":11.3819311436,
+    "tmo_pred_seg":253.7958381186,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-10",
     "hora":"04:00",
-    "llamadas_recibidas":26.9530350591,
-    "tmo_pred_seg":247.1794108983,
+    "llamadas_recibidas":26.8665521924,
+    "tmo_pred_seg":247.204742918,
     "ejecutivos_requeridos":5
   },
   {
     "fecha":"2025-10-10",
     "hora":"05:00",
-    "llamadas_recibidas":101.9680873211,
-    "tmo_pred_seg":248.7941764106,
+    "llamadas_recibidas":102.2401956861,
+    "tmo_pred_seg":248.8241837712,
     "ejecutivos_requeridos":11
   },
   {
     "fecha":"2025-10-10",
     "hora":"06:00",
-    "llamadas_recibidas":223.0039266738,
-    "tmo_pred_seg":253.6028123587,
+    "llamadas_recibidas":222.9656956434,
+    "tmo_pred_seg":253.6039730451,
     "ejecutivos_requeridos":21
   },
   {
     "fecha":"2025-10-10",
     "hora":"07:00",
-    "llamadas_recibidas":372.593202284,
-    "tmo_pred_seg":288.4311246736,
+    "llamadas_recibidas":372.9499926524,
+    "tmo_pred_seg":288.9702018357,
     "ejecutivos_requeridos":38
   },
   {
     "fecha":"2025-10-10",
     "hora":"08:00",
-    "llamadas_recibidas":443.7533423665,
-    "tmo_pred_seg":295.2799334807,
+    "llamadas_recibidas":443.8147139989,
+    "tmo_pred_seg":295.3616563206,
     "ejecutivos_requeridos":46
   },
   {
     "fecha":"2025-10-10",
     "hora":"09:00",
-    "llamadas_recibidas":430.3713094583,
-    "tmo_pred_seg":294.0067586069,
-    "ejecutivos_requeridos":44
+    "llamadas_recibidas":430.9591774325,
+    "tmo_pred_seg":294.15942507,
+    "ejecutivos_requeridos":45
   },
   {
     "fecha":"2025-10-10",
     "hora":"10:00",
-    "llamadas_recibidas":373.4882092296,
-    "tmo_pred_seg":293.5634485234,
-    "ejecutivos_requeridos":39
+    "llamadas_recibidas":370.9285598659,
+    "tmo_pred_seg":293.8055722585,
+    "ejecutivos_requeridos":38
   },
   {
     "fecha":"2025-10-10",
     "hora":"11:00",
-    "llamadas_recibidas":318.5551983025,
-    "tmo_pred_seg":292.5960491152,
+    "llamadas_recibidas":317.7923692359,
+    "tmo_pred_seg":292.3356924425,
     "ejecutivos_requeridos":33
   },
   {
     "fecha":"2025-10-10",
     "hora":"12:00",
-    "llamadas_recibidas":290.9327562239,
-    "tmo_pred_seg":293.1638907703,
+    "llamadas_recibidas":290.921194033,
+    "tmo_pred_seg":293.0013505041,
     "ejecutivos_requeridos":30
   },
   {
     "fecha":"2025-10-10",
     "hora":"13:00",
-    "llamadas_recibidas":265.0492052865,
-    "tmo_pred_seg":295.3778568362,
+    "llamadas_recibidas":265.1857810926,
+    "tmo_pred_seg":295.3421357627,
     "ejecutivos_requeridos":28
   },
   {
     "fecha":"2025-10-10",
     "hora":"14:00",
-    "llamadas_recibidas":241.0818893679,
-    "tmo_pred_seg":296.1398034219,
+    "llamadas_recibidas":241.0786021976,
+    "tmo_pred_seg":296.1235809619,
     "ejecutivos_requeridos":26
   },
   {
     "fecha":"2025-10-10",
     "hora":"15:00",
     "llamadas_recibidas":227.2573377786,
-    "tmo_pred_seg":295.6631882264,
+    "tmo_pred_seg":295.6389469244,
     "ejecutivos_requeridos":25
   },
   {
     "fecha":"2025-10-10",
     "hora":"16:00",
-    "llamadas_recibidas":210.4266128101,
-    "tmo_pred_seg":293.0380132863,
+    "llamadas_recibidas":211.2740609061,
+    "tmo_pred_seg":293.0976550572,
     "ejecutivos_requeridos":23
   },
   {
     "fecha":"2025-10-10",
     "hora":"17:00",
-    "llamadas_recibidas":196.0189465121,
+    "llamadas_recibidas":196.3203831708,
     "tmo_pred_seg":288.917540096,
     "ejecutivos_requeridos":22
   },
@@ -1074,55 +941,55 @@
     "fecha":"2025-10-10",
     "hora":"18:00",
     "llamadas_recibidas":164.3666837997,
-    "tmo_pred_seg":290.5614581331,
+    "tmo_pred_seg":290.5629866615,
     "ejecutivos_requeridos":19
   },
   {
     "fecha":"2025-10-10",
     "hora":"19:00",
     "llamadas_recibidas":94.7852663563,
-    "tmo_pred_seg":288.3198486408,
+    "tmo_pred_seg":288.8461730633,
     "ejecutivos_requeridos":12
   },
   {
     "fecha":"2025-10-10",
     "hora":"20:00",
-    "llamadas_recibidas":70.8982161285,
-    "tmo_pred_seg":286.1817131137,
+    "llamadas_recibidas":70.5799122148,
+    "tmo_pred_seg":286.426600601,
     "ejecutivos_requeridos":10
   },
   {
     "fecha":"2025-10-10",
     "hora":"21:00",
-    "llamadas_recibidas":44.5092778319,
-    "tmo_pred_seg":279.5577467942,
+    "llamadas_recibidas":44.6161984641,
+    "tmo_pred_seg":280.0287696877,
     "ejecutivos_requeridos":7
   },
   {
     "fecha":"2025-10-10",
     "hora":"22:00",
-    "llamadas_recibidas":30.8356560092,
-    "tmo_pred_seg":269.9896309479,
+    "llamadas_recibidas":30.8661994391,
+    "tmo_pred_seg":269.9932960555,
     "ejecutivos_requeridos":5
   },
   {
     "fecha":"2025-10-10",
     "hora":"23:00",
     "llamadas_recibidas":14.5892271566,
-    "tmo_pred_seg":267.7217825764,
+    "tmo_pred_seg":267.6976523206,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-11",
     "hora":"00:00",
-    "llamadas_recibidas":3.8497162345,
-    "tmo_pred_seg":261.8989945496,
+    "llamadas_recibidas":3.8113292427,
+    "tmo_pred_seg":262.1679580193,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-11",
     "hora":"01:00",
-    "llamadas_recibidas":2.5027815816,
+    "llamadas_recibidas":2.509156729,
     "tmo_pred_seg":259.6618660023,
     "ejecutivos_requeridos":2
   },
@@ -1137,69 +1004,69 @@
     "fecha":"2025-10-11",
     "hora":"03:00",
     "llamadas_recibidas":11.0598846333,
-    "tmo_pred_seg":253.9777045176,
+    "tmo_pred_seg":253.9791679635,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-11",
     "hora":"04:00",
     "llamadas_recibidas":22.0829066084,
-    "tmo_pred_seg":247.824420781,
+    "tmo_pred_seg":247.8157170928,
     "ejecutivos_requeridos":4
   },
   {
     "fecha":"2025-10-11",
     "hora":"05:00",
-    "llamadas_recibidas":80.9670113122,
+    "llamadas_recibidas":79.7930583288,
     "tmo_pred_seg":248.5038026216,
-    "ejecutivos_requeridos":10
+    "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-11",
     "hora":"06:00",
-    "llamadas_recibidas":159.8998915464,
+    "llamadas_recibidas":159.8309253218,
     "tmo_pred_seg":253.1421399209,
     "ejecutivos_requeridos":16
   },
   {
     "fecha":"2025-10-11",
     "hora":"07:00",
-    "llamadas_recibidas":313.8689071431,
+    "llamadas_recibidas":312.1978490965,
     "tmo_pred_seg":272.4726312026,
     "ejecutivos_requeridos":30
   },
   {
     "fecha":"2025-10-11",
     "hora":"08:00",
-    "llamadas_recibidas":417.7603654893,
-    "tmo_pred_seg":274.6659857798,
+    "llamadas_recibidas":417.761264679,
+    "tmo_pred_seg":274.7048292172,
     "ejecutivos_requeridos":40
   },
   {
     "fecha":"2025-10-11",
     "hora":"09:00",
-    "llamadas_recibidas":403.9869763542,
+    "llamadas_recibidas":403.8336432516,
     "tmo_pred_seg":275.5543160053,
     "ejecutivos_requeridos":39
   },
   {
     "fecha":"2025-10-11",
     "hora":"10:00",
-    "llamadas_recibidas":364.1351155232,
+    "llamadas_recibidas":364.0912318791,
     "tmo_pred_seg":275.6849364835,
     "ejecutivos_requeridos":35
   },
   {
     "fecha":"2025-10-11",
     "hora":"11:00",
-    "llamadas_recibidas":327.9565549988,
-    "tmo_pred_seg":276.3797290199,
+    "llamadas_recibidas":328.0392085927,
+    "tmo_pred_seg":276.372906299,
     "ejecutivos_requeridos":32
   },
   {
     "fecha":"2025-10-11",
     "hora":"12:00",
-    "llamadas_recibidas":288.6981221612,
+    "llamadas_recibidas":288.4840733101,
     "tmo_pred_seg":275.9968597536,
     "ejecutivos_requeridos":29
   },
@@ -1207,503 +1074,503 @@
     "fecha":"2025-10-11",
     "hora":"13:00",
     "llamadas_recibidas":278.2637464189,
-    "tmo_pred_seg":275.7877984549,
+    "tmo_pred_seg":275.963105183,
     "ejecutivos_requeridos":28
   },
   {
     "fecha":"2025-10-11",
     "hora":"14:00",
     "llamadas_recibidas":261.1704581228,
-    "tmo_pred_seg":275.5865110418,
+    "tmo_pred_seg":275.5799690606,
     "ejecutivos_requeridos":26
   },
   {
     "fecha":"2025-10-11",
     "hora":"15:00",
-    "llamadas_recibidas":248.1976737447,
-    "tmo_pred_seg":274.7437522964,
+    "llamadas_recibidas":248.1919945297,
+    "tmo_pred_seg":275.566623689,
     "ejecutivos_requeridos":25
   },
   {
     "fecha":"2025-10-11",
     "hora":"16:00",
     "llamadas_recibidas":227.0200331494,
-    "tmo_pred_seg":272.1685773729,
+    "tmo_pred_seg":274.5134590163,
     "ejecutivos_requeridos":23
   },
   {
     "fecha":"2025-10-11",
     "hora":"17:00",
     "llamadas_recibidas":207.1813876881,
-    "tmo_pred_seg":273.9958930344,
+    "tmo_pred_seg":274.2085114682,
     "ejecutivos_requeridos":22
   },
   {
     "fecha":"2025-10-11",
     "hora":"18:00",
     "llamadas_recibidas":166.3363700982,
-    "tmo_pred_seg":278.8514873626,
+    "tmo_pred_seg":279.7069262063,
     "ejecutivos_requeridos":18
   },
   {
     "fecha":"2025-10-11",
     "hora":"19:00",
     "llamadas_recibidas":103.3434244981,
-    "tmo_pred_seg":284.1327366024,
+    "tmo_pred_seg":284.1063312658,
     "ejecutivos_requeridos":13
   },
   {
     "fecha":"2025-10-11",
     "hora":"20:00",
     "llamadas_recibidas":73.8539093181,
-    "tmo_pred_seg":283.5005951497,
+    "tmo_pred_seg":283.6232245239,
     "ejecutivos_requeridos":10
   },
   {
     "fecha":"2025-10-11",
     "hora":"21:00",
-    "llamadas_recibidas":44.5890950027,
-    "tmo_pred_seg":277.1890288351,
+    "llamadas_recibidas":44.5922684218,
+    "tmo_pred_seg":277.1767360422,
     "ejecutivos_requeridos":7
   },
   {
     "fecha":"2025-10-11",
     "hora":"22:00",
-    "llamadas_recibidas":30.1069565133,
-    "tmo_pred_seg":268.8857991203,
+    "llamadas_recibidas":30.078717349,
+    "tmo_pred_seg":268.8770777034,
     "ejecutivos_requeridos":5
   },
   {
     "fecha":"2025-10-11",
     "hora":"23:00",
-    "llamadas_recibidas":11.3822714435,
-    "tmo_pred_seg":266.1240185351,
+    "llamadas_recibidas":11.4111358287,
+    "tmo_pred_seg":266.1241481048,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-12",
     "hora":"00:00",
-    "llamadas_recibidas":2.5128615824,
-    "tmo_pred_seg":260.2229611181,
+    "llamadas_recibidas":2.4919619457,
+    "tmo_pred_seg":260.2364261336,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-12",
     "hora":"01:00",
-    "llamadas_recibidas":1.9447469968,
-    "tmo_pred_seg":258.2725681793,
+    "llamadas_recibidas":1.9684538829,
+    "tmo_pred_seg":258.2868874561,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-12",
     "hora":"02:00",
-    "llamadas_recibidas":1.7473363498,
-    "tmo_pred_seg":254.9578903716,
+    "llamadas_recibidas":1.663997568,
+    "tmo_pred_seg":255.0033838969,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-12",
     "hora":"03:00",
-    "llamadas_recibidas":6.5364753155,
-    "tmo_pred_seg":253.1395127587,
+    "llamadas_recibidas":6.488055507,
+    "tmo_pred_seg":253.3416301687,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-12",
     "hora":"04:00",
-    "llamadas_recibidas":17.1462432053,
-    "tmo_pred_seg":245.4217060414,
+    "llamadas_recibidas":16.5988725601,
+    "tmo_pred_seg":245.6254140625,
     "ejecutivos_requeridos":4
   },
   {
     "fecha":"2025-10-12",
     "hora":"05:00",
-    "llamadas_recibidas":61.5894286043,
-    "tmo_pred_seg":245.2142343277,
+    "llamadas_recibidas":61.4585248764,
+    "tmo_pred_seg":245.3819530181,
     "ejecutivos_requeridos":8
   },
   {
     "fecha":"2025-10-12",
     "hora":"06:00",
-    "llamadas_recibidas":111.9068411322,
-    "tmo_pred_seg":248.6003726579,
+    "llamadas_recibidas":109.0580197898,
+    "tmo_pred_seg":248.6436390942,
     "ejecutivos_requeridos":12
   },
   {
     "fecha":"2025-10-12",
     "hora":"07:00",
-    "llamadas_recibidas":249.7544725624,
-    "tmo_pred_seg":262.0907689941,
+    "llamadas_recibidas":246.6895434612,
+    "tmo_pred_seg":262.2676944271,
     "ejecutivos_requeridos":24
   },
   {
     "fecha":"2025-10-12",
     "hora":"08:00",
-    "llamadas_recibidas":362.1240646766,
-    "tmo_pred_seg":262.7391437387,
+    "llamadas_recibidas":362.2139771145,
+    "tmo_pred_seg":262.9334159158,
     "ejecutivos_requeridos":34
   },
   {
     "fecha":"2025-10-12",
     "hora":"09:00",
-    "llamadas_recibidas":369.4651200583,
-    "tmo_pred_seg":265.1337873727,
-    "ejecutivos_requeridos":35
+    "llamadas_recibidas":368.0432613583,
+    "tmo_pred_seg":265.1869465154,
+    "ejecutivos_requeridos":34
   },
   {
     "fecha":"2025-10-12",
     "hora":"10:00",
-    "llamadas_recibidas":331.0893049801,
-    "tmo_pred_seg":267.4775283742,
+    "llamadas_recibidas":325.5189131479,
+    "tmo_pred_seg":267.3844791392,
     "ejecutivos_requeridos":31
   },
   {
     "fecha":"2025-10-12",
     "hora":"11:00",
-    "llamadas_recibidas":289.2341160092,
-    "tmo_pred_seg":267.8720867986,
+    "llamadas_recibidas":288.6698940394,
+    "tmo_pred_seg":267.9124947806,
     "ejecutivos_requeridos":28
   },
   {
     "fecha":"2025-10-12",
     "hora":"12:00",
-    "llamadas_recibidas":274.0686317263,
-    "tmo_pred_seg":268.1655845822,
+    "llamadas_recibidas":274.0417561765,
+    "tmo_pred_seg":268.4569214874,
     "ejecutivos_requeridos":27
   },
   {
     "fecha":"2025-10-12",
     "hora":"13:00",
-    "llamadas_recibidas":260.9865652383,
-    "tmo_pred_seg":267.827650494,
+    "llamadas_recibidas":260.6256997759,
+    "tmo_pred_seg":267.8104839525,
     "ejecutivos_requeridos":26
   },
   {
     "fecha":"2025-10-12",
     "hora":"14:00",
-    "llamadas_recibidas":249.1122378584,
-    "tmo_pred_seg":265.8742180596,
+    "llamadas_recibidas":248.9561453296,
+    "tmo_pred_seg":266.9082232046,
     "ejecutivos_requeridos":24
   },
   {
     "fecha":"2025-10-12",
     "hora":"15:00",
-    "llamadas_recibidas":233.6947089083,
-    "tmo_pred_seg":264.7584388939,
+    "llamadas_recibidas":233.7281643754,
+    "tmo_pred_seg":265.37540093,
     "ejecutivos_requeridos":23
   },
   {
     "fecha":"2025-10-12",
     "hora":"16:00",
-    "llamadas_recibidas":224.9582198107,
-    "tmo_pred_seg":266.881738054,
+    "llamadas_recibidas":224.9345619092,
+    "tmo_pred_seg":267.0674446189,
     "ejecutivos_requeridos":23
   },
   {
     "fecha":"2025-10-12",
     "hora":"17:00",
-    "llamadas_recibidas":211.8922359517,
-    "tmo_pred_seg":270.7306971073,
+    "llamadas_recibidas":211.7720158517,
+    "tmo_pred_seg":270.7122250567,
     "ejecutivos_requeridos":22
   },
   {
     "fecha":"2025-10-12",
     "hora":"18:00",
-    "llamadas_recibidas":180.3610070165,
-    "tmo_pred_seg":269.220592808,
+    "llamadas_recibidas":180.3071248238,
+    "tmo_pred_seg":269.54185383,
     "ejecutivos_requeridos":19
   },
   {
     "fecha":"2025-10-12",
     "hora":"19:00",
-    "llamadas_recibidas":106.1519689194,
-    "tmo_pred_seg":272.6125757118,
+    "llamadas_recibidas":106.1508387554,
+    "tmo_pred_seg":272.5760382664,
     "ejecutivos_requeridos":13
   },
   {
     "fecha":"2025-10-12",
     "hora":"20:00",
     "llamadas_recibidas":75.4617412222,
-    "tmo_pred_seg":280.9058823753,
+    "tmo_pred_seg":281.663578582,
     "ejecutivos_requeridos":10
   },
   {
     "fecha":"2025-10-12",
     "hora":"21:00",
-    "llamadas_recibidas":45.2804619943,
+    "llamadas_recibidas":45.1763109326,
     "tmo_pred_seg":276.1185593347,
     "ejecutivos_requeridos":7
   },
   {
     "fecha":"2025-10-12",
     "hora":"22:00",
-    "llamadas_recibidas":22.3800227993,
-    "tmo_pred_seg":269.4201723406,
+    "llamadas_recibidas":22.1354020516,
+    "tmo_pred_seg":269.3889264321,
     "ejecutivos_requeridos":4
   },
   {
     "fecha":"2025-10-12",
     "hora":"23:00",
-    "llamadas_recibidas":9.8305224723,
-    "tmo_pred_seg":264.5071651301,
+    "llamadas_recibidas":9.8147657979,
+    "tmo_pred_seg":264.5371759938,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-13",
     "hora":"00:00",
     "llamadas_recibidas":2.9718963609,
-    "tmo_pred_seg":258.2689704249,
+    "tmo_pred_seg":258.5499197367,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-13",
     "hora":"01:00",
-    "llamadas_recibidas":1.6675905297,
-    "tmo_pred_seg":255.2092740623,
+    "llamadas_recibidas":1.5533219388,
+    "tmo_pred_seg":254.997175556,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-13",
     "hora":"02:00",
-    "llamadas_recibidas":3.2990162938,
-    "tmo_pred_seg":252.6756644602,
+    "llamadas_recibidas":3.3043573935,
+    "tmo_pred_seg":252.7137441686,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-13",
     "hora":"03:00",
-    "llamadas_recibidas":11.3704528747,
-    "tmo_pred_seg":251.8879966577,
+    "llamadas_recibidas":11.3616765761,
+    "tmo_pred_seg":251.890566526,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-13",
     "hora":"04:00",
-    "llamadas_recibidas":31.9946745674,
-    "tmo_pred_seg":244.0846788847,
+    "llamadas_recibidas":32.6559975568,
+    "tmo_pred_seg":244.0757663088,
     "ejecutivos_requeridos":5
   },
   {
     "fecha":"2025-10-13",
     "hora":"05:00",
-    "llamadas_recibidas":76.3604757436,
-    "tmo_pred_seg":243.6933163043,
+    "llamadas_recibidas":75.9657620199,
+    "tmo_pred_seg":243.6939699179,
     "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-13",
     "hora":"06:00",
-    "llamadas_recibidas":180.8663331209,
-    "tmo_pred_seg":243.6288129208,
+    "llamadas_recibidas":180.7506789047,
+    "tmo_pred_seg":243.7244236742,
     "ejecutivos_requeridos":17
   },
   {
     "fecha":"2025-10-13",
     "hora":"07:00",
-    "llamadas_recibidas":337.8234003194,
-    "tmo_pred_seg":272.7920843848,
-    "ejecutivos_requeridos":32
+    "llamadas_recibidas":338.8469547909,
+    "tmo_pred_seg":272.6747270829,
+    "ejecutivos_requeridos":33
   },
   {
     "fecha":"2025-10-13",
     "hora":"08:00",
-    "llamadas_recibidas":425.0507174581,
-    "tmo_pred_seg":283.5653428436,
-    "ejecutivos_requeridos":42
+    "llamadas_recibidas":428.4512582041,
+    "tmo_pred_seg":283.2143976732,
+    "ejecutivos_requeridos":43
   },
   {
     "fecha":"2025-10-13",
     "hora":"09:00",
-    "llamadas_recibidas":407.7724118927,
-    "tmo_pred_seg":287.7040051811,
-    "ejecutivos_requeridos":41
+    "llamadas_recibidas":414.4975820965,
+    "tmo_pred_seg":286.0046091129,
+    "ejecutivos_requeridos":42
   },
   {
     "fecha":"2025-10-13",
     "hora":"10:00",
-    "llamadas_recibidas":363.6018477933,
-    "tmo_pred_seg":287.9097658447,
+    "llamadas_recibidas":363.0388345795,
+    "tmo_pred_seg":287.8738521746,
     "ejecutivos_requeridos":37
   },
   {
     "fecha":"2025-10-13",
     "hora":"11:00",
-    "llamadas_recibidas":324.5411359484,
-    "tmo_pred_seg":287.1948416502,
+    "llamadas_recibidas":326.6144966654,
+    "tmo_pred_seg":287.1561628871,
     "ejecutivos_requeridos":33
   },
   {
     "fecha":"2025-10-13",
     "hora":"12:00",
-    "llamadas_recibidas":289.5115778927,
-    "tmo_pred_seg":287.6763673251,
+    "llamadas_recibidas":290.0963824377,
+    "tmo_pred_seg":287.6639480706,
     "ejecutivos_requeridos":30
   },
   {
     "fecha":"2025-10-13",
     "hora":"13:00",
     "llamadas_recibidas":272.754173358,
-    "tmo_pred_seg":291.4587044632,
+    "tmo_pred_seg":291.419589732,
     "ejecutivos_requeridos":29
   },
   {
     "fecha":"2025-10-13",
     "hora":"14:00",
-    "llamadas_recibidas":250.4697077352,
-    "tmo_pred_seg":293.0906497998,
+    "llamadas_recibidas":250.770934928,
+    "tmo_pred_seg":293.0815738248,
     "ejecutivos_requeridos":27
   },
   {
     "fecha":"2025-10-13",
     "hora":"15:00",
-    "llamadas_recibidas":242.5022346049,
-    "tmo_pred_seg":291.5551444634,
+    "llamadas_recibidas":243.0456774595,
+    "tmo_pred_seg":291.6355989177,
     "ejecutivos_requeridos":26
   },
   {
     "fecha":"2025-10-13",
     "hora":"16:00",
-    "llamadas_recibidas":222.5628943842,
-    "tmo_pred_seg":291.3550929151,
+    "llamadas_recibidas":222.4582764445,
+    "tmo_pred_seg":291.4365155069,
     "ejecutivos_requeridos":24
   },
   {
     "fecha":"2025-10-13",
     "hora":"17:00",
-    "llamadas_recibidas":213.7129132083,
-    "tmo_pred_seg":285.1364116605,
+    "llamadas_recibidas":213.7937086663,
+    "tmo_pred_seg":285.1003529009,
     "ejecutivos_requeridos":23
   },
   {
     "fecha":"2025-10-13",
     "hora":"18:00",
-    "llamadas_recibidas":170.6221224094,
-    "tmo_pred_seg":285.5894826138,
+    "llamadas_recibidas":169.8240401586,
+    "tmo_pred_seg":285.6197234158,
     "ejecutivos_requeridos":19
   },
   {
     "fecha":"2025-10-13",
     "hora":"19:00",
-    "llamadas_recibidas":103.0528654123,
-    "tmo_pred_seg":287.0749834843,
+    "llamadas_recibidas":102.3423175481,
+    "tmo_pred_seg":287.0412372709,
     "ejecutivos_requeridos":13
   },
   {
     "fecha":"2025-10-13",
     "hora":"20:00",
-    "llamadas_recibidas":71.8880407223,
-    "tmo_pred_seg":284.1266177011,
+    "llamadas_recibidas":71.6276692201,
+    "tmo_pred_seg":284.119995761,
     "ejecutivos_requeridos":10
   },
   {
     "fecha":"2025-10-13",
     "hora":"21:00",
-    "llamadas_recibidas":43.6649150212,
+    "llamadas_recibidas":43.6683000326,
     "tmo_pred_seg":280.8523295201,
     "ejecutivos_requeridos":7
   },
   {
     "fecha":"2025-10-13",
     "hora":"22:00",
-    "llamadas_recibidas":30.0145304007,
-    "tmo_pred_seg":270.2626214087,
+    "llamadas_recibidas":30.9932064328,
+    "tmo_pred_seg":270.2497889215,
     "ejecutivos_requeridos":5
   },
   {
     "fecha":"2025-10-13",
     "hora":"23:00",
-    "llamadas_recibidas":14.0860022795,
-    "tmo_pred_seg":266.3979906996,
+    "llamadas_recibidas":14.4942579438,
+    "tmo_pred_seg":266.2426336801,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-14",
     "hora":"00:00",
-    "llamadas_recibidas":3.0122503245,
-    "tmo_pred_seg":260.5039344481,
+    "llamadas_recibidas":2.8662008027,
+    "tmo_pred_seg":260.2325496108,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-14",
     "hora":"01:00",
-    "llamadas_recibidas":2.5427363106,
-    "tmo_pred_seg":257.707692748,
+    "llamadas_recibidas":2.6736081885,
+    "tmo_pred_seg":257.702377584,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-14",
     "hora":"02:00",
-    "llamadas_recibidas":2.5513856008,
-    "tmo_pred_seg":255.0839885176,
+    "llamadas_recibidas":2.6261543782,
+    "tmo_pred_seg":255.0610922011,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-14",
     "hora":"03:00",
-    "llamadas_recibidas":8.0547572074,
+    "llamadas_recibidas":7.9345867865,
     "tmo_pred_seg":253.1750198458,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-14",
     "hora":"04:00",
-    "llamadas_recibidas":24.9050015497,
+    "llamadas_recibidas":24.6653006636,
     "tmo_pred_seg":245.5533664204,
     "ejecutivos_requeridos":4
   },
   {
     "fecha":"2025-10-14",
     "hora":"05:00",
-    "llamadas_recibidas":105.5014152583,
+    "llamadas_recibidas":106.6383025822,
     "tmo_pred_seg":246.2419011011,
     "ejecutivos_requeridos":12
   },
   {
     "fecha":"2025-10-14",
     "hora":"06:00",
-    "llamadas_recibidas":224.6441047148,
-    "tmo_pred_seg":250.8454878374,
+    "llamadas_recibidas":224.6822691371,
+    "tmo_pred_seg":250.9071775177,
     "ejecutivos_requeridos":21
   },
   {
     "fecha":"2025-10-14",
     "hora":"07:00",
-    "llamadas_recibidas":371.7550401628,
-    "tmo_pred_seg":282.0946678146,
+    "llamadas_recibidas":372.2262722293,
+    "tmo_pred_seg":281.8302497793,
     "ejecutivos_requeridos":37
   },
   {
     "fecha":"2025-10-14",
     "hora":"08:00",
-    "llamadas_recibidas":445.9482264557,
-    "tmo_pred_seg":297.0559686525,
+    "llamadas_recibidas":446.1271125964,
+    "tmo_pred_seg":296.9209459391,
     "ejecutivos_requeridos":46
   },
   {
     "fecha":"2025-10-14",
     "hora":"09:00",
-    "llamadas_recibidas":437.885713739,
-    "tmo_pred_seg":293.1805635083,
+    "llamadas_recibidas":437.0317840994,
+    "tmo_pred_seg":292.6957033454,
     "ejecutivos_requeridos":45
   },
   {
     "fecha":"2025-10-14",
     "hora":"10:00",
-    "llamadas_recibidas":356.7799476619,
-    "tmo_pred_seg":292.9758417801,
+    "llamadas_recibidas":357.1818746885,
+    "tmo_pred_seg":292.9337928442,
     "ejecutivos_requeridos":37
   },
   {
     "fecha":"2025-10-14",
     "hora":"11:00",
-    "llamadas_recibidas":320.7006045772,
-    "tmo_pred_seg":291.8225099736,
+    "llamadas_recibidas":320.334614602,
+    "tmo_pred_seg":291.9135019578,
     "ejecutivos_requeridos":33
   },
   {
     "fecha":"2025-10-14",
     "hora":"12:00",
-    "llamadas_recibidas":293.9854307383,
+    "llamadas_recibidas":293.7400829888,
     "tmo_pred_seg":292.282228272,
     "ejecutivos_requeridos":31
   },
@@ -1711,21 +1578,21 @@
     "fecha":"2025-10-14",
     "hora":"13:00",
     "llamadas_recibidas":265.2254047081,
-    "tmo_pred_seg":295.3377339623,
+    "tmo_pred_seg":295.3583033258,
     "ejecutivos_requeridos":28
   },
   {
     "fecha":"2025-10-14",
     "hora":"14:00",
     "llamadas_recibidas":241.1312952551,
-    "tmo_pred_seg":295.8812498087,
+    "tmo_pred_seg":295.9067878463,
     "ejecutivos_requeridos":26
   },
   {
     "fecha":"2025-10-14",
     "hora":"15:00",
     "llamadas_recibidas":228.4443002933,
-    "tmo_pred_seg":295.4224022174,
+    "tmo_pred_seg":295.4458976737,
     "ejecutivos_requeridos":25
   },
   {
@@ -1752,21 +1619,21 @@
   {
     "fecha":"2025-10-14",
     "hora":"19:00",
-    "llamadas_recibidas":97.1081744698,
+    "llamadas_recibidas":97.1841301223,
     "tmo_pred_seg":286.2732310237,
     "ejecutivos_requeridos":12
   },
   {
     "fecha":"2025-10-14",
     "hora":"20:00",
-    "llamadas_recibidas":69.41305524,
+    "llamadas_recibidas":69.7641908323,
     "tmo_pred_seg":283.7142513621,
     "ejecutivos_requeridos":9
   },
   {
     "fecha":"2025-10-14",
     "hora":"21:00",
-    "llamadas_recibidas":42.6640786244,
+    "llamadas_recibidas":42.6465549357,
     "tmo_pred_seg":279.1908765286,
     "ejecutivos_requeridos":7
   },
@@ -1780,14 +1647,14 @@
   {
     "fecha":"2025-10-14",
     "hora":"23:00",
-    "llamadas_recibidas":15.2241638368,
+    "llamadas_recibidas":15.2245976584,
     "tmo_pred_seg":267.0316391471,
     "ejecutivos_requeridos":4
   },
   {
     "fecha":"2025-10-15",
     "hora":"00:00",
-    "llamadas_recibidas":3.5942911869,
+    "llamadas_recibidas":3.6218263023,
     "tmo_pred_seg":260.9441585869,
     "ejecutivos_requeridos":2
   },
@@ -1795,7 +1662,7 @@
     "fecha":"2025-10-15",
     "hora":"01:00",
     "llamadas_recibidas":2.60246555,
-    "tmo_pred_seg":258.7178764697,
+    "tmo_pred_seg":258.6974802372,
     "ejecutivos_requeridos":2
   },
   {
@@ -1815,7 +1682,7 @@
   {
     "fecha":"2025-10-15",
     "hora":"04:00",
-    "llamadas_recibidas":30.3509456792,
+    "llamadas_recibidas":30.4288807655,
     "tmo_pred_seg":246.6036512493,
     "ejecutivos_requeridos":5
   },
@@ -1843,7 +1710,7 @@
   {
     "fecha":"2025-10-15",
     "hora":"08:00",
-    "llamadas_recibidas":467.6652858835,
+    "llamadas_recibidas":467.6641800768,
     "tmo_pred_seg":294.7937056937,
     "ejecutivos_requeridos":48
   },
@@ -1857,8 +1724,8 @@
   {
     "fecha":"2025-10-15",
     "hora":"10:00",
-    "llamadas_recibidas":360.8834383125,
-    "tmo_pred_seg":294.081314392,
+    "llamadas_recibidas":360.8936431785,
+    "tmo_pred_seg":294.1112829146,
     "ejecutivos_requeridos":37
   },
   {
@@ -1913,8 +1780,8 @@
   {
     "fecha":"2025-10-15",
     "hora":"18:00",
-    "llamadas_recibidas":159.7907568088,
-    "tmo_pred_seg":286.9006384356,
+    "llamadas_recibidas":159.7894864425,
+    "tmo_pred_seg":286.2952762785,
     "ejecutivos_requeridos":18
   },
   {
@@ -1941,7 +1808,7 @@
   {
     "fecha":"2025-10-15",
     "hora":"22:00",
-    "llamadas_recibidas":30.3649926467,
+    "llamadas_recibidas":30.3865616914,
     "tmo_pred_seg":269.6360209638,
     "ejecutivos_requeridos":5
   },
@@ -1962,14 +1829,14 @@
   {
     "fecha":"2025-10-16",
     "hora":"01:00",
-    "llamadas_recibidas":2.3868294398,
+    "llamadas_recibidas":2.3377919016,
     "tmo_pred_seg":258.5078560113,
     "ejecutivos_requeridos":2
   },
   {
     "fecha":"2025-10-16",
     "hora":"02:00",
-    "llamadas_recibidas":2.5972807537,
+    "llamadas_recibidas":2.5797095288,
     "tmo_pred_seg":255.5067525627,
     "ejecutivos_requeridos":2
   },
@@ -1983,7 +1850,7 @@
   {
     "fecha":"2025-10-16",
     "hora":"04:00",
-    "llamadas_recibidas":29.4701883168,
+    "llamadas_recibidas":29.4852912722,
     "tmo_pred_seg":246.8384880136,
     "ejecutivos_requeridos":5
   },
@@ -2025,14 +1892,14 @@
   {
     "fecha":"2025-10-16",
     "hora":"10:00",
-    "llamadas_recibidas":358.9435380979,
+    "llamadas_recibidas":359.0219513486,
     "tmo_pred_seg":294.3919154347,
     "ejecutivos_requeridos":37
   },
   {
     "fecha":"2025-10-16",
     "hora":"11:00",
-    "llamadas_recibidas":321.0228155529,
+    "llamadas_recibidas":321.160886936,
     "tmo_pred_seg":293.4288459414,
     "ejecutivos_requeridos":33
   },
@@ -2040,28 +1907,28 @@
     "fecha":"2025-10-16",
     "hora":"12:00",
     "llamadas_recibidas":291.6652722978,
-    "tmo_pred_seg":293.4647404038,
+    "tmo_pred_seg":293.4160632313,
     "ejecutivos_requeridos":30
   },
   {
     "fecha":"2025-10-16",
     "hora":"13:00",
     "llamadas_recibidas":265.3731258497,
-    "tmo_pred_seg":295.7217412575,
+    "tmo_pred_seg":295.8039707393,
     "ejecutivos_requeridos":28
   },
   {
     "fecha":"2025-10-16",
     "hora":"14:00",
-    "llamadas_recibidas":240.6691837722,
-    "tmo_pred_seg":296.3190570504,
+    "llamadas_recibidas":240.3760891807,
+    "tmo_pred_seg":296.2951675453,
     "ejecutivos_requeridos":26
   },
   {
     "fecha":"2025-10-16",
     "hora":"15:00",
     "llamadas_recibidas":227.056180912,
-    "tmo_pred_seg":295.8799557379,
+    "tmo_pred_seg":295.8817558431,
     "ejecutivos_requeridos":25
   },
   {
@@ -2075,13 +1942,13 @@
     "fecha":"2025-10-16",
     "hora":"17:00",
     "llamadas_recibidas":195.2712221084,
-    "tmo_pred_seg":286.8859286174,
+    "tmo_pred_seg":286.8821714609,
     "ejecutivos_requeridos":21
   },
   {
     "fecha":"2025-10-16",
     "hora":"18:00",
-    "llamadas_recibidas":159.6376535711,
+    "llamadas_recibidas":159.6404260756,
     "tmo_pred_seg":287.1918306016,
     "ejecutivos_requeridos":18
   },
@@ -2144,28 +2011,28 @@
   {
     "fecha":"2025-10-17",
     "hora":"03:00",
-    "llamadas_recibidas":11.1756159322,
+    "llamadas_recibidas":11.1454264712,
     "tmo_pred_seg":253.8803299657,
     "ejecutivos_requeridos":3
   },
   {
     "fecha":"2025-10-17",
     "hora":"04:00",
-    "llamadas_recibidas":28.1323296215,
+    "llamadas_recibidas":27.9724682664,
     "tmo_pred_seg":246.8483523883,
     "ejecutivos_requeridos":5
   },
   {
     "fecha":"2025-10-17",
     "hora":"05:00",
-    "llamadas_recibidas":106.3596170989,
+    "llamadas_recibidas":106.3563028146,
     "tmo_pred_seg":247.7870456859,
     "ejecutivos_requeridos":12
   },
   {
     "fecha":"2025-10-17",
     "hora":"06:00",
-    "llamadas_recibidas":227.1189939288,
+    "llamadas_recibidas":227.1255389323,
     "tmo_pred_seg":252.6846222176,
     "ejecutivos_requeridos":22
   },
@@ -2179,35 +2046,35 @@
   {
     "fecha":"2025-10-17",
     "hora":"08:00",
-    "llamadas_recibidas":462.6886174832,
+    "llamadas_recibidas":463.4019281755,
     "tmo_pred_seg":294.9673472922,
     "ejecutivos_requeridos":48
   },
   {
     "fecha":"2025-10-17",
     "hora":"09:00",
-    "llamadas_recibidas":429.9433646691,
-    "tmo_pred_seg":294.2983576403,
+    "llamadas_recibidas":430.1561194043,
+    "tmo_pred_seg":294.2970819743,
     "ejecutivos_requeridos":44
   },
   {
     "fecha":"2025-10-17",
     "hora":"10:00",
-    "llamadas_recibidas":357.1378752474,
+    "llamadas_recibidas":357.0969851304,
     "tmo_pred_seg":294.1967111309,
     "ejecutivos_requeridos":37
   },
   {
     "fecha":"2025-10-17",
     "hora":"11:00",
-    "llamadas_recibidas":318.7118647921,
+    "llamadas_recibidas":318.7110123028,
     "tmo_pred_seg":292.8096764741,
     "ejecutivos_requeridos":33
   },
   {
     "fecha":"2025-10-17",
     "hora":"12:00",
-    "llamadas_recibidas":276.621540678,
+    "llamadas_recibidas":276.5886284123,
     "tmo_pred_seg":293.4513218432,
     "ejecutivos_requeridos":29
   },
