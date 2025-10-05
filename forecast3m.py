@@ -52,9 +52,13 @@ AUX_RATE    = 0.15
 # ===== Erlang-A (abandono/paciencia) + restricciones adicionales =====
 USE_ERLANG_A       = True      # si False -> Erlang-C tradicional
 MEAN_PATIENCE_S    = 60.0      # paciencia media ~ exponencial
-ABANDON_MAX        = 0.06      # <= 6% (nuevo)
-AWT_MAX_S          = 120.0     # tiempo medio de espera objetivo (nuevo)
+ABANDON_MAX        = 0.06      # abandono máximo permitido (<= 6%)
+AWT_MAX_S          = 120.0     # tiempo medio de espera objetivo (segundos)
 USE_STRICT_OCC_CAP = True      # respetar tope de ocupación
+
+# ===== NUEVO: Pausa legal entre llamadas =====
+# Se suma al AHT efectivo de dimensionamiento (impacta directamente en Erlangs y N)
+INTERCALL_GAP_S    = 10.0
 
 # --------------------------------
 
@@ -136,17 +140,20 @@ def required_agents(calls_h: float, aht_s: float,
                     patience_s: float = MEAN_PATIENCE_S,
                     abandon_max: float = ABANDON_MAX,
                     awt_max_s: float = AWT_MAX_S,
+                    intercall_gap_s: float = INTERCALL_GAP_S,
                     use_strict_occ_cap: bool = USE_STRICT_OCC_CAP) -> dict:
     """
     Devuelve N_productive y N_scheduled con métricas:
       - A_erlangs, occupancy, service_level, abandon_rate, avg_wait_s
     Cumple simultáneamente: SLA, ocupación, abandono y AWT máximo.
+    Suma la pausa legal entre llamadas al AHT efectivo.
     """
     calls_h = max(0.0, float(calls_h))
-    aht_s   = max(1.0, float(aht_s))   # evitar división por 0
+    # AHT efectivo = AHT modelo + pausa legal entre llamadas
+    aht_eff = max(1.0, float(aht_s) + float(intercall_gap_s))
 
     lamb = calls_h / 3600.0            # λ (1h)
-    A = lamb * aht_s                    # Erlangs
+    A = lamb * aht_eff                  # Erlangs con AHT efectivo
 
     # piso por ocupación
     N_occ_min = int(np.ceil(A / max_occ)) if (use_strict_occ_cap and max_occ > 0) else int(np.ceil(A + 1))
@@ -160,11 +167,11 @@ def required_agents(calls_h: float, aht_s: float,
     # subir hasta cumplir metas
     for _ in range(3000):
         if use_erlang_a:
-            service, aban, awt = erlang_a_metrics(A, N, aht_s, patience_s, asa_s)
+            service, aban, awt = erlang_a_metrics(A, N, aht_eff, patience_s, asa_s)
         else:
-            service = service_level(A, N, aht_s, asa_s)
+            service = service_level(A, N, aht_eff, asa_s)
             aban = 0.0
-            awt  = erlang_c_awt(A, N, aht_s)
+            awt  = erlang_c_awt(A, N, aht_eff)
         occ = A / N if N > 0 else 1.0
 
         cond_sla  = (service >= sla_target)
@@ -306,6 +313,7 @@ def main():
             patience_s=MEAN_PATIENCE_S,
             abandon_max=ABANDON_MAX,
             awt_max_s=AWT_MAX_S,
+            intercall_gap_s=INTERCALL_GAP_S,
             use_strict_occ_cap=USE_STRICT_OCC_CAP
         )
         erlang_rows.append({
@@ -333,7 +341,8 @@ def main():
                 "USE_ERLANG_A": USE_ERLANG_A,
                 "MEAN_PATIENCE_S": MEAN_PATIENCE_S,
                 "ABANDON_MAX": ABANDON_MAX,
-                "AWT_MAX_S": AWT_MAX_S
+                "AWT_MAX_S": AWT_MAX_S,
+                "INTERCALL_GAP_S": INTERCALL_GAP_S
             }
         })
 
@@ -360,4 +369,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
