@@ -1,185 +1,123 @@
-# -*- coding: utf-8 -*-
-"""
-Forecast 3 meses (multitarea robusto) → public/forecast_3m.json / .csv
-- Usa model_multi.pkl (calls: quantile median, tmo: huber)
-- Respeta metadata de targets.json (log1p o no)
-"""
-import os, json
+# forecast3m.py
+# Inferencia conjunta Llamadas + TMO descargando modelos desde el último Release
+import os
+import json
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
+from datetime import datetime, timedelta
 
-# --- Erlang C ---
-def erlang_c_prob_wait(N, A):
-    if A<=0: return 0.0
-    if N<=0: return 1.0
-    if A>=N: return 1.0
-    summ=0.0; term=1.0
-    for k in range(1,N):
-        summ += term; term *= A/k
-    summ += term
-    pn = term*(A/N)/(1.0-(A/N))
-    return float(pn/(summ+pn))
+from utils_release import download_asset_from_latest
 
-def service_level(N,A,AHT,ASA):
-    if A<=0: return 1.0
-    if N<=0: return 0.0
-    Pw = 1.0 if A>=N else erlang_c_prob_wait(N,A)
-    return 1.0 - Pw*np.exp(-(N-A)*(ASA/max(AHT,1e-9)))
+# ---------- Parámetros ----------
+OWNER = "Supervision-Inbound"           # <--- ajusta si tu org/usuario cambia
+REPO  = "wf-Analytics-AI2.5"            # <--- nombre exacto del repo
 
-def required_agents(cph, aht, sla=0.90, asa=22.0, occ=0.80):
-    if cph<=0 or aht<=0: return 0
-    lam = cph/3600.0; A = lam*aht
-    N = max(1,int(np.ceil(A/occ)))
-    while True:
-        if service_level(N,A,aht,asa)>=sla and (A/N)<=occ:
-            return N
-        N+=1
-        if N>10000: return N
+ASSET_LLAMADAS = "modelo_llamadas.pkl"
+ASSET_TMO      = "modelo_tmo.pkl"
 
-# --- Paths ---
-PUBLIC_DIR   = "./public"; os.makedirs(PUBLIC_DIR, exist_ok=True)
-OUT_JSON     = f"{PUBLIC_DIR}/forecast_3m.json"
-OUT_CSV      = f"{PUBLIC_DIR}/forecast_3m.csv"
+MODELS_DIR = "models"
+OUT_CSV    = "data_out/predicciones.csv"
+OUT_JSON   = "public/predicciones.json"
 
-MODEL_PATH   = "./model_multi.pkl"
-FEATS_PATH   = "./features.json"
-TARGETS_PATH = "./targets.json"
+HOURS_AHEAD = 24 * 90  # 90 días hacia adelante (3 meses)
+FREQ        = "H"      # por hora
 
-DATA_PATHS   = ["./data/Hosting ia.xlsx","./Data/Hosting ia.xlsx","./Hosting ia.xlsx",
-                "/kaggle/input/historico-trafico/Hosting ia.xlsx"]
+# Semillas (si no hay estado reciente disponible)
+DEFAULT_LL  = 100.0    # base inicial llamadas
+DEFAULT_TMO = 180.0    # base inicial tmo (segundos)
 
-SLA=0.90; ASA=22.0; OCC=0.80
+# --------------------------------
 
-def find_first(paths):
-    for p in paths:
-        if os.path.exists(p): return p
-    return None
-
-def ensure_datetime(df):
-    for c in ["datetime","datatime","fecha_hora","ts"]:
-        if c in df.columns:
-            df["datetime"]=pd.to_datetime(df[c],errors="coerce"); return df
-    fcol = next((c for c in ["fecha","date","dia"] if c in df.columns), None)
-    hcol = next((c for c in ["hora","time"] if c in df.columns), None)
-    if fcol and hcol:
-        f = pd.to_datetime(df[fcol], errors="coerce", dayfirst=True)
-        h = pd.to_timedelta(df[hcol].astype(str), errors="coerce")
-        mask = df[hcol].apply(lambda x: str(x).isdigit())
-        if mask.any():
-            hn = pd.to_timedelta(pd.to_numeric(df.loc[mask,hcol], errors="coerce"), unit="h")
-            h.loc[mask] = hn.values
-        df["datetime"]=f+h.fillna(pd.Timedelta(0)); return df
-    if fcol:
-        df["datetime"]=pd.to_datetime(df[fcol],errors="coerce",dayfirst=True); return df
-    raise ValueError("No pude construir 'datetime'.")
-
-def aggregate_to_hour(df, calls_col, tmo_col):
-    df=df.copy(); df["datetime_h"]=df["datetime"].dt.floor("h")
-    grp=df.groupby("datetime_h",as_index=False).agg({calls_col:"sum"})
-    if tmo_col in df.columns:
-        df["_tmo_w"]=df[tmo_col]*df[calls_col]
-        w=df.groupby("datetime_h",as_index=False).agg({"_tmo_w":"sum", calls_col:"sum"})
-        grp[tmo_col]=np.where(w[calls_col]>0, w["_tmo_w"]/w[calls_col], 0.0)
-    return grp.rename(columns={"datetime_h":"datetime"})
-
-def add_time_cols(df):
-    df["hour"]=df["datetime"].dt.hour
-    df["dow"]=df["datetime"].dt.dayofweek
-    df["week"]=df["datetime"].dt.isocalendar().week.astype(int)
-    df["month"]=df["datetime"].dt.month
-    df["hour_sin"]=np.sin(2*np.pi*df["hour"]/24); df["hour_cos"]=np.cos(2*np.pi*df["hour"]/24)
-    df["dow_sin"]=np.sin(2*np.pi*df["dow"]/7);   df["dow_cos"]=np.cos(2*np.pi*df["dow"]/7)
+def add_time_features(df):
+    df["dow"] = df["ts"].dt.dayofweek
+    df["doy"] = df["ts"].dt.dayofyear
+    df["week"] = df["ts"].dt.isocalendar().week.astype(int)
+    df["month"] = df["ts"].dt.month
+    df["hour"] = df["ts"].dt.hour
+    df["sin_hour"] = np.sin(2*np.pi*df["hour"]/24)
+    df["cos_hour"] = np.cos(2*np.pi*df["hour"]/24)
+    df["sin_dow"] = np.sin(2*np.pi*df["dow"]/7)
+    df["cos_dow"] = np.cos(2*np.pi*df["dow"]/7)
     return df
 
-def build_row(ts,hist,X_cols,calls_col,tmo_col):
-    row=pd.DataFrame({"datetime":[ts]}); row=add_time_cols(row)
-    h=hist.set_index("datetime")
-    yS=h["yhat_calls"].fillna(h[calls_col])
-    tS=h["yhat_tmo"].fillna(h[tmo_col]) if tmo_col in h.columns else pd.Series(dtype=float)
+def build_feature_matrix(df, target_col):
+    feats = [
+        "sin_hour","cos_hour","sin_dow","cos_dow",
+        "dow","month",
+        f"{target_col}_lag1", f"{target_col}_lag24",
+        f"{target_col}_ma24", f"{target_col}_ma168",
+        f"{target_col}_samehour_7d"
+    ]
+    return df[feats].copy()
 
-    for lag in range(1,25):
-        row[f"{calls_col}_lag{lag}"] = yS.reindex([ts-pd.Timedelta(hours=lag)]).values[0]
-        row[f"{tmo_col}_lag{lag}"]   = tS.reindex([ts-pd.Timedelta(hours=lag)]).values[0] if tmo_col in h.columns else np.nan
-    row[f"{calls_col}_roll3"]=yS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(3).mean()
-    row[f"{calls_col}_roll6"]=yS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(6).mean()
-    row[f"{calls_col}_roll24"]=yS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(24).mean()
-    if tmo_col in h.columns:
-        row[f"{tmo_col}_roll3"]=tS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(3).mean()
-        row[f"{tmo_col}_roll6"]=tS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(6).mean()
-        row[f"{tmo_col}_roll24"]=tS.loc[ts-pd.Timedelta(hours=24*365):ts].tail(24).mean()
-    return row.reindex(columns=set(["datetime"]+X_cols))
+def ensure_dirs():
+    os.makedirs("public", exist_ok=True)
+    os.makedirs("data_out", exist_ok=True)
+    os.makedirs(MODELS_DIR, exist_ok=True)
 
-def end_of_month_plus2(ts):
-    y,m=ts.year,ts.month
-    m3=m+3; y3=y+(m3-1)//12; m3=((m3-1)%12)+1
-    first_next=pd.Timestamp(year=y3,month=m3,day=1,hour=0)
-    return first_next - pd.Timedelta(hours=1)
+def main():
+    ensure_dirs()
 
-# --- Carga artefactos ---
-assert os.path.exists(MODEL_PATH), "Falta model_multi.pkl"
-assert os.path.exists(FEATS_PATH), "Falta features.json"
-assert os.path.exists(TARGETS_PATH), "Falta targets.json"
-bundle = joblib.load(MODEL_PATH)
-calls_est = bundle["calls_est"]; tmo_est = bundle["tmo_est"]
+    # 1) Descargar modelos desde el último Release
+    print("Descargando modelos desde Release…")
+    p_ll = download_asset_from_latest(OWNER, REPO, ASSET_LLAMADAS, os.path.join(MODELS_DIR, ASSET_LLAMADAS))
+    p_tm = download_asset_from_latest(OWNER, REPO, ASSET_TMO,      os.path.join(MODELS_DIR, ASSET_TMO))
+    print("Modelos descargados:", p_ll, p_tm)
 
-with open(FEATS_PATH,"r",encoding="utf-8") as f: X_cols=json.load(f)["feature_columns"]
-with open(TARGETS_PATH,"r",encoding="utf-8") as f: meta=json.load(f)
-CALLS_COL = meta["calls_col"]; TMO_COL = meta["tmo_col"]
-CALLS_TRANS = meta.get("calls_transform","identity")
+    # 2) Cargar modelos
+    mdl_ll = joblib.load(p_ll)
+    mdl_tmo = joblib.load(p_tm) if os.path.exists(p_tm) else None
 
-def inv_calls(x):
-    return np.expm1(x) if CALLS_TRANS=="log1p" else x
+    # 3) Construir timeline futuro
+    start = pd.Timestamp.utcnow().floor("H")
+    idx = pd.date_range(start, periods=HOURS_AHEAD, freq=FREQ, tz="UTC").tz_convert("America/Santiago").tz_localize(None)
+    df = pd.DataFrame({"ts": idx})
+    df = add_time_features(df)
 
-# --- Seed histórico ---
-data_path = find_first(DATA_PATHS); assert data_path, "Falta histórico."
-raw = pd.read_excel(data_path, engine="openpyxl")
-df  = ensure_datetime(raw)
-df  = df[["datetime",CALLS_COL,TMO_COL]].dropna(subset=["datetime"]).sort_values("datetime")
-hist = aggregate_to_hour(df,CALLS_COL,TMO_COL).sort_values("datetime").reset_index(drop=True)
-hist["yhat_calls"]=np.nan; hist["yhat_tmo"]=np.nan
+    # 4) Semillas simples (si no mantienes estado histórico)
+    df["seed_ll"]  = DEFAULT_LL
+    df["seed_tmo"] = DEFAULT_TMO
 
-# --- Horizonte ---
-now = pd.Timestamp.now(tz=None).floor("h")
-start = max(now+pd.Timedelta(hours=1), hist["datetime"].max()+pd.Timedelta(hours=1))
-end   = end_of_month_plus2(now)
-H = max(0, int((end-start)/pd.Timedelta(hours=1))+1)
-future_index = [start+pd.Timedelta(hours=i) for i in range(H)]
+    # Llamadas seeds → features
+    df["llamadas_lag1"]       = df["seed_ll"].shift(1)
+    df["llamadas_lag24"]      = df["seed_ll"].shift(24)
+    df["llamadas_ma24"]       = df["seed_ll"].rolling(24, min_periods=1).mean()
+    df["llamadas_ma168"]      = df["seed_ll"].rolling(24*7, min_periods=1).mean()
+    df["llamadas_samehour_7d"]= df["seed_ll"].shift(24*7)
 
-# --- Predicción recursiva ---
-rows=[]
-for ts in future_index:
-    feat = build_row(ts, hist, X_cols, CALLS_COL, TMO_COL)
-    X    = feat[X_cols].values
+    # TMO seeds → features
+    df["tmo_seg_lag1"]        = df["seed_tmo"].shift(1)
+    df["tmo_seg_lag24"]       = df["seed_tmo"].shift(24)
+    df["tmo_seg_ma24"]        = df["seed_tmo"].rolling(24, min_periods=1).mean()
+    df["tmo_seg_ma168"]       = df["seed_tmo"].rolling(24*7, min_periods=1).mean()
+    df["tmo_seg_samehour_7d"] = df["seed_tmo"].shift(24*7)
 
-    y_calls = inv_calls(calls_est.predict(X))
-    y_tmo   = tmo_est.predict(X)
+    # 5) Predicción
+    X_ll = build_feature_matrix(df, "llamadas").fillna(method="bfill").fillna(method="ffill")
+    pred_ll = mdl_ll.predict(X_ll)
 
-    calls_hat = float(max(y_calls[0], 0.0))
-    tmo_hat   = float(max(y_tmo[0],   0.0))
+    if mdl_tmo is not None:
+        X_tmo = build_feature_matrix(df, "tmo_seg").fillna(method="bfill").fillna(method="ffill")
+        pred_tmo = mdl_tmo.predict(X_tmo)
+    else:
+        pred_tmo = np.full(len(df), np.nan)
 
-    # alimentar histórico
-    new = {"datetime":ts, CALLS_COL:np.nan, TMO_COL:np.nan, "yhat_calls":calls_hat, "yhat_tmo":tmo_hat}
-    hist = pd.concat([hist, pd.DataFrame([new])], ignore_index=True)
-
-    N = required_agents(calls_hat, max(tmo_hat,1.0), sla=0.90, asa=22.0, occ=0.80)
-
-    rows.append({
-        "datetime": ts,
-        "llamadas_recibidas": calls_hat,
-        "tmo_pred_seg": tmo_hat,
-        "ejecutivos_requeridos": int(N)
+    out = pd.DataFrame({
+        "ts": df["ts"].dt.strftime("%Y-%m-%d %H:%M:%S"),
+        "pred_llamadas": np.maximum(0, pred_ll).round(2),
+        "pred_tmo_seg": np.maximum(0, pred_tmo).round(2)
     })
 
-forecast = pd.DataFrame(rows).sort_values("datetime").reset_index(drop=True)
-forecast["fecha"] = forecast["datetime"].dt.strftime("%Y-%m-%d")
-forecast["hora"]  = forecast["datetime"].dt.strftime("%H:%M")
-forecast = forecast[["fecha","hora","llamadas_recibidas","tmo_pred_seg","ejecutivos_requeridos","datetime"]]
-forecast.drop(columns=["datetime"]).to_json(OUT_JSON, orient="records", force_ascii=False, indent=2)
-forecast.drop(columns=["datetime"]).to_csv(OUT_CSV, index=False)
+    # 6) Guardar CSV y JSON
+    out.to_csv(OUT_CSV, index=False)
+    with open(OUT_JSON, "w", encoding="utf-8") as f:
+        json.dump(out.to_dict(orient="records"), f, ensure_ascii=False, indent=2)
 
-print("✅ Forecast 3M robusto listo:")
-print(" -", OUT_JSON)
-print(" -", OUT_CSV)
-print(forecast.head(5))
+    print(f"OK -> {OUT_CSV}")
+    print(f"OK -> {OUT_JSON}")
+
+if __name__ == "__main__":
+    main()
+
 
