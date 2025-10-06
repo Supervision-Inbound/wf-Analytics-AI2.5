@@ -1,0 +1,29 @@
+# Archivos de cache y compilados de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Directorios de entornos virtuales
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Archivos generados por el script de inferencia
+# No queremos versionar los datos de salida, ya que se generan en cada ejecución
+/public/*.json
+/data_out/
+
+# Directorio de modelos descargados
+# Los modelos se obtienen del Release, no se guardan en el repositorio
+/models/
+
+# Archivos de configuración de IDEs
+.vscode/
+.idea/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
