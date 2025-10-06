@@ -25,8 +25,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # forzamos versión de sklearn compatible con los .pkl entrenados
+          # asegurar compatibilidad con modelos .pkl
           pip install "scikit-learn==1.2.2"
+          # **NECESARIO para cargar .keras** (CPU)
+          pip install "tensorflow-cpu==2.15.0"
 
       - name: Run inference (download models from Release)
         env:
