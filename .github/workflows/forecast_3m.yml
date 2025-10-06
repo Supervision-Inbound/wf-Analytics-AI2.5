@@ -25,12 +25,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          # forzamos versión de sklearn compatible con los .pkl entrenados
+          pip install "scikit-learn==1.2.2"
 
       - name: Run inference (download models from Release)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Si quieres descargar el .keras desde una URL de release pública:
-          # RELEASE_MODELS_URL: ${{ secrets.RELEASE_MODELS_URL }}
         run: |
           python forecast3m.py
 
@@ -47,4 +47,3 @@ jobs:
             public/last_update.json
           git commit -m "chore(forecast): actualización automática de predicciones + erlang" --allow-empty || true
           git push
-
