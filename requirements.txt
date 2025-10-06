@@ -5,6 +5,6 @@ joblib==1.4.2
 python-dateutil==2.9.0.post0
 requests==2.32.3
 
-# para cargar el .keras entrenado (Keras 3)
+# Keras 3 + TF CPU estables para cargar .keras
 keras==3.3.3
 tensorflow==2.17.0
