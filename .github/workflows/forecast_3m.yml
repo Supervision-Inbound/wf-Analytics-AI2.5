@@ -3,7 +3,7 @@ name: forecast3m
 on:
   workflow_dispatch:
   schedule:
-    - cron: "15 6 * * *"
+    - cron: "15 6 * * *"  # 06:15 UTC diario
 
 permissions:
   contents: write
@@ -25,7 +25,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # fuerza versiones exactas por seguridad (coinciden con requirements)
+          # fijamos versiones para compatibilidad en runners
           pip install "keras==3.3.3" "tensorflow==2.17.0" "scikit-learn==1.2.2"
 
       - name: Run inference (download models from Release)
@@ -45,5 +45,5 @@ jobs:
             public/erlang_forecast.json \
             data_out/erlang_forecast.json \
             public/last_update.json
-          git commit -m "chore(forecast): actualización automática de predicciones + erlang (NN perfil horario)" --allow-empty || true
+          git commit -m "chore(forecast): actualización automática de predicciones + erlang" --allow-empty || true
           git push
