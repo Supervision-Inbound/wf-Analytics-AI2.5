@@ -1,6 +1,12 @@
 # forecast3m.py
 # Inferencia conjunta (recibidos + tmo) + dimensionamiento con Erlang-C/A
 # Descarga modelos desde el último Release y publica JSON/CSV listos para front.
+# Novedades:
+#  - Horizonte: 1er día del mes anterior -> último día del mes siguiente (hora a hora, America/Santiago)
+#  - Distribución diaria→horaria: primero calcula total diario y luego reparte por pesos (perfil por DOW)
+#  - JSON histórico: mueve registros fuera de la ventana actual a public/prediccion_historica.json
+#  - Erlang-A/C con pausa legal, ocupación máxima, abandono y AWT objetivo
+#  - Redondeo a enteros (llamadas, TMO, agentes)
 
 import os
 import json
@@ -24,6 +30,9 @@ OUT_JSON_DATAOUT   = "data_out/predicciones.json"
 OUT_JSON_ERLANG    = "public/erlang_forecast.json"
 OUT_JSON_ERLANG_DO = "data_out/erlang_forecast.json"
 STAMP_JSON         = "public/last_update.json"
+
+# Histórico acumulado
+HIST_JSON_PUBLIC   = "public/prediccion_historica.json"
 
 # (HOURS_AHEAD ya no se usa; mantenido para compatibilidad si otros scripts lo leen)
 HOURS_AHEAD = 24 * 90
@@ -64,6 +73,10 @@ INTERCALL_GAP_S    = 10.0
 ABSENTEEISM_RATE   = 0.23      # 23% mensual (colchón adicional de dotación)
 
 # --------------------------------
+def ensure_dirs():
+    os.makedirs("public", exist_ok=True)
+    os.makedirs("data_out", exist_ok=True)
+    os.makedirs(MODELS_DIR, exist_ok=True)
 
 # ===== Erlang-C utils =====
 def erlang_c_prob_wait(N: int, A: float) -> float:
@@ -89,10 +102,7 @@ def service_level(A: float, N: int, AHT: float, T: float) -> float:
     return 1.0 - pw * np.exp(-(N - A) * (T / AHT))
 
 def erlang_c_awt(A: float, N: int, AHT: float) -> float:
-    """
-    AWT (espera media) aproximada para Erlang-C:
-    E[W] = Pw * AHT / (N - A), con Pw = Erlang-C.
-    """
+    """AWT ≈ Pw * AHT / (N - A)."""
     if N <= 0 or A <= 0 or N <= A:
         return float('inf')
     pw = erlang_c_prob_wait(N, A)
@@ -113,7 +123,7 @@ def erlang_a_metrics(A: float, N: int, aht_s: float, patience_s: float, T: float
     theta = 1.0 / max(patience_s, 1.0)
     if N <= A:
         return 0.0, 1.0, float('inf')
-    pw = erlang_c_prob_wait(N, A)  # % que espera (baseline C)
+    pw = erlang_c_prob_wait(N, A)  # baseline C
     r = mu * (N - A)
     rate = r + theta
     sl_a = (1.0 - pw) + pw * (r / rate) * (1.0 - np.exp(-rate * T))
@@ -223,11 +233,6 @@ def build_feature_matrix(df, target_col):
     ]
     return df[feats].copy()
 
-def ensure_dirs():
-    os.makedirs("public", exist_ok=True)
-    os.makedirs("data_out", exist_ok=True)
-    os.makedirs(MODELS_DIR, exist_ok=True)
-
 def build_month_window_idx():
     """
     Devuelve un DatetimeIndex (naive, hora a hora) desde el 1 del mes anterior
@@ -251,6 +256,76 @@ def build_month_window_idx():
     # Generar rango horario en local y devolver naive (sin tz) manteniendo las horas locales
     idx = pd.date_range(start=start, end=end, freq="H", tz=tz)
     return idx.tz_localize(None)
+
+# ====== Pesos horarios por día de semana (distribución diaria->horaria) ======
+def compute_hourly_weights_by_dow(df_ts_hours: pd.DataFrame, raw_hourly_calls: np.ndarray) -> pd.DataFrame:
+    """
+    Calcula pesos por hora y por día de semana (dow) a partir del patrón del propio modelo.
+    1) Toma las predicciones horarias "crudas" (sin redistribución) como referencia histórica.
+    2) Para cada dow, promedia por hora; normaliza a que las 24h sumen 1.
+    Retorna un DataFrame con columnas: dow, hour, weight (0..1)
+    """
+    tmp = pd.DataFrame({
+        "dow": df_ts_hours["dow"].values,
+        "hour": df_ts_hours["hour"].values,
+        "y": raw_hourly_calls.astype(float)
+    })
+    prof = tmp.groupby(["dow","hour"], as_index=False)["y"].mean()
+    prof["weight"] = prof["y"]
+    # normalizar por DOW
+    prof["sum_dow"] = prof.groupby("dow")["weight"].transform("sum").replace(0, np.nan)
+    prof["weight"] = prof["weight"] / prof["sum_dow"]
+    prof["weight"] = prof["weight"].fillna(1.0/24.0)  # fallback uniforme si algo queda NaN
+    return prof[["dow","hour","weight"]].copy()
+
+def redistribute_daily_to_hourly(df_ts_hours: pd.DataFrame,
+                                 raw_hourly_calls: np.ndarray,
+                                 weights_by_dow: pd.DataFrame) -> np.ndarray:
+    """
+    Para cada día:
+      - calcula el total diario a partir de las predicciones crudas (robusto a outliers diarios),
+      - toma los pesos de su DOW y reparte total_diario * weight(hora).
+    Devuelve array de llamadas por hora redistribuidas (float).
+    """
+    df = df_ts_hours.copy()
+    df["raw_call"] = raw_hourly_calls.astype(float)
+    df["date"] = df["ts"].dt.date
+
+    # tabla de pesos (join por dow, hour)
+    w = weights_by_dow.copy()
+    df = df.merge(w, on=["dow","hour"], how="left")
+    df["weight"] = df["weight"].fillna(1.0/24.0)
+
+    # total diario desde crudo
+    daily_totals = df.groupby("date", as_index=False)["raw_call"].sum().rename(columns={"raw_call":"daily_total"})
+    df = df.merge(daily_totals, on="date", how="left")
+
+    # repartir
+    df["call_redistributed"] = df["daily_total"] * df["weight"]
+
+    return df["call_redistributed"].values
+
+def try_read_json(path: str):
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+def write_json(path: str, payload):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+
+def dedup_by_ts(records):
+    """Elimina duplicados por 'ts', conservando el último."""
+    seen = {}
+    for r in records:
+        seen[r["ts"]] = r
+    # ordenar por ts asc para consistencia
+    out = [seen[k] for k in sorted(seen.keys())]
+    return out
 
 def main():
     ensure_dirs()
@@ -288,33 +363,67 @@ def main():
     df[f"{TARGET_TMO}_ma168"]       = df["seed_tmo"].rolling(24*7, min_periods=1).mean()
     df[f"{TARGET_TMO}_samehour_7d"] = df["seed_tmo"].shift(24*7)
 
-    # 5) Predicción modelos
+    # 5) Predicción modelos (crudo horario)
     X_ll  = build_feature_matrix(df, TARGET_LLAMADAS).fillna(method="bfill").fillna(method="ffill")
-    pred_ll = mdl_ll.predict(X_ll)
+    pred_ll_raw = mdl_ll.predict(X_ll).astype(float)
 
     if mdl_tmo is not None:
         X_tmo = build_feature_matrix(df, TARGET_TMO).fillna(method="bfill").fillna(method="ffill")
-        pred_tmo = mdl_tmo.predict(X_tmo)
+        pred_tmo_raw = mdl_tmo.predict(X_tmo).astype(float)
     else:
-        pred_tmo = np.full(len(df), DEFAULT_TMO)
+        pred_tmo_raw = np.full(len(df), DEFAULT_TMO, dtype=float)
+
+    # ====== Distribución diaria → horaria por pesos (perfil por DOW) ======
+    # 1) Calcula pesos por DOW y hora a partir del patrón crudo del propio modelo
+    weights_by_dow = compute_hourly_weights_by_dow(df, pred_ll_raw)
+    # 2) Redistribuye: para cada día, toma total diario crudo y reparte por pesos
+    pred_ll_redist = redistribute_daily_to_hourly(df, pred_ll_raw, weights_by_dow)
 
     # Redondeo a enteros (como pediste)
-    pred_ll_int  = np.maximum(0, np.rint(pred_ll).astype(int))
-    pred_tmo_int = np.maximum(0, np.rint(pred_tmo).astype(int))
+    pred_ll_int  = np.maximum(0, np.rint(pred_ll_redist).astype(int))
+    pred_tmo_int = np.maximum(0, np.rint(pred_tmo_raw).astype(int))
 
+    # Salida base
     out = pd.DataFrame({
         "ts": df["ts"].dt.strftime("%Y-%m-%d %H:%M:%S"),
         "pred_llamadas": pred_ll_int,
         "pred_tmo_seg": pred_tmo_int
     })
 
-    # 6) Guardar CSV y JSONs de predicciones
+    # 6) Guardar CSV y JSONs de predicciones (ventana actual)
     out.to_csv(OUT_CSV, index=False)
-    payload = out.to_dict(orient="records")
-    with open(OUT_JSON_PUBLIC, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
-    with open(OUT_JSON_DATAOUT, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
+    payload_current = out.to_dict(orient="records")
+    write_json(OUT_JSON_PUBLIC, payload_current)
+    write_json(OUT_JSON_DATAOUT, payload_current)
+
+    # ======= JSON Histórico: mover lo que sale de la ventana =======
+    # Cargar predicciones previas (si existen) y extraer lo que quedó fuera del nuevo inicio
+    prev_public = try_read_json(OUT_JSON_PUBLIC)  # después de escribir ya es el "nuevo", pero por compat mantenemos lectura
+    prev_dataout = try_read_json(OUT_JSON_DATAOUT)
+    # Cargar histórico existente
+    hist_records = try_read_json(HIST_JSON_PUBLIC)
+
+    # Determinar inicio actual (string) para comparar
+    start_str = pd.to_datetime(idx.min()).strftime("%Y-%m-%d %H:%M:%S")
+
+    # Si existiera un predicciones.json previo de otra ejecución (en data_out suele quedar copia)
+    # tomamos el data_out anterior si es más "antiguo" que el public actual (heurística)
+    prev_candidates = prev_dataout if len(prev_dataout) > len(prev_public) else prev_public
+
+    # Filtrar los que quedan fuera del inicio
+    prev_old = [r for r in prev_candidates if r.get("ts","") < start_str]
+
+    if prev_old:
+        # Mezclar con histórico actual y deduplicar por ts
+        hist_merged = hist_records + prev_old
+        hist_merged = dedup_by_ts(hist_merged)
+        write_json(HIST_JSON_PUBLIC, hist_merged)
+        print(f"[Hist] Movidos {len(prev_old)} registros antiguos a {HIST_JSON_PUBLIC}")
+    else:
+        # si no hay previos, conservar histórico tal cual
+        if not os.path.exists(HIST_JSON_PUBLIC):
+            write_json(HIST_JSON_PUBLIC, [])
+        print("[Hist] Sin cambios en histórico")
 
     # ===== Productividad programada y shrinkage derivado =====
     prod_factor = scheduled_productivity_factor(
@@ -327,7 +436,7 @@ def main():
 
     # 7) Calcular Erlang (C/A) y agentes
     erlang_rows = []
-    for row in payload:
+    for row in payload_current:
         calls_h = int(row["pred_llamadas"])
         aht_s   = int(row["pred_tmo_seg"])
         dims = required_agents(
@@ -376,10 +485,8 @@ def main():
             }
         })
 
-    with open(OUT_JSON_ERLANG, "w", encoding="utf-8") as f:
-        json.dump(erlang_rows, f, ensure_ascii=False, indent=2)
-    with open(OUT_JSON_ERLANG_DO, "w", encoding="utf-8") as f:
-        json.dump(erlang_rows, f, ensure_ascii=False, indent=2)
+    write_json(OUT_JSON_ERLANG, erlang_rows)
+    write_json(OUT_JSON_ERLANG_DO, erlang_rows)
 
     # 8) Timestamp para forzar actualización
     horizon_hours = len(idx)  # horizonte real (del 1 mes anterior al fin del mes siguiente)
@@ -388,8 +495,7 @@ def main():
         "horizon_hours": int(horizon_hours),
         "records": len(out)
     }
-    with open(STAMP_JSON, "w", encoding="utf-8") as f:
-        json.dump(stamp, f, ensure_ascii=False, indent=2)
+    write_json(STAMP_JSON, stamp)
 
     print(f"OK -> {OUT_CSV}")
     print(f"OK -> {OUT_JSON_PUBLIC}")
@@ -397,6 +503,7 @@ def main():
     print(f"OK -> {OUT_JSON_ERLANG}")
     print(f"OK -> {OUT_JSON_ERLANG_DO}")
     print(f"OK -> {STAMP_JSON}")
+    print(f"OK -> {HIST_JSON_PUBLIC}")
 
 if __name__ == "__main__":
     main()
