@@ -1,10 +1,17 @@
 name: forecast3m
 
+# ==========================================================
+# Disparadores (Triggers) del Workflow
+# ==========================================================
 on:
+  # 1. PERMITE LA EJECUCIÓN MANUAL DESDE LA PESTAÑA "ACTIONS"
   workflow_dispatch:
-  schedule:
-    - cron: "15 6 * * *"  # 06:15 UTC diario
 
+  # 2. EJECUCIÓN AUTOMÁTICA PROGRAMADA
+  schedule:
+    - cron: "15 6 * * *"  # Se ejecuta todos los días a las 06:15 UTC
+
+# Permisos para que la Action pueda escribir en el repositorio
 permissions:
   contents: write
 
@@ -13,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -21,29 +28,22 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install deps
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # forzamos versión de sklearn compatible con los .pkl entrenados
-          pip install "scikit-learn==1.2.2"
 
-      - name: Run inference (download models from Release)
+      - name: Run inference script
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python forecast3m.py
 
-      - name: Commit & push outputs (always commit)
+      - name: Commit & push output files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            public/predicciones.json \
-            data_out/predicciones.csv \
-            data_out/predicciones.json \
-            public/erlang_forecast.json \
-            data_out/erlang_forecast.json \
-            public/last_update.json
-          git commit -m "chore(forecast): actualización automática de predicciones + erlang" --allow-empty || true
+          git add .
+          # El siguiente comando solo hace commit si detecta cambios reales en los archivos
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore(forecast): actualización automática de predicciones con modelos NN"
           git push
