@@ -1,261 +1,379 @@
 # forecast3m.py
-# Inferencia para modelo NN de llamadas (Keras 3) -> salida por HORA
-# - Carga modelo: models/modelo_llamadas_nn.keras
-# - Lee histórico horario (igual que training): Hosting ia.xlsx
-# - Repite pipeline (features) y predice próximos días (horizonte configurable)
-# - Exporta: fecha, hora, llamadas (CSV/JSON) + last_update.json
-# ----------------------------------------------------------------------
+# Inferencia conjunta (recibidos + tmo) + dimensionamiento con Erlang-C/A
+# Descarga modelos desde el último Release y publica JSON/CSV listos para front.
 
 import os
-import io
 import json
-import math
-import zipfile
-import datetime as dt
+import joblib
 import numpy as np
 import pandas as pd
-from dateutil.relativedelta import relativedelta
+from utils_release import download_asset_from_latest
 
-# Keras 3 / TF CPU
-from keras.models import load_model
+# ---------- Parámetros ----------
+OWNER = "Supervision-Inbound"         # <- ajusta si cambia
+REPO  = "wf-Analytics-AI2.5"          # <- exacto
 
-# Opcional: si sigues bajando modelos desde el Release
-import requests
+ASSET_LLAMADAS = "modelo_llamadas.pkl"
+ASSET_TMO      = "modelo_tmo.pkl"
 
-# -------------------- Parámetros editables --------------------
-RUTA_DATA        = "Hosting ia.xlsx"  # mismo archivo del entrenamiento en el repo
-HOJA_EXCEL       = 0
-COL_FECHA        = "fecha"
-COL_HORA         = "hora"
-COL_LLAMADAS     = "recibidos"
+MODELS_DIR = "models"
 
-# Horizonte de predicción en días (3 meses aprox.)
-HORIZON_DAYS     = 90
-SEQ_DIAS         = 28   # igual que en training
+OUT_CSV            = "data_out/predicciones.csv"
+OUT_JSON_PUBLIC    = "public/predicciones.json"
+OUT_JSON_DATAOUT   = "data_out/predicciones.json"
+OUT_JSON_ERLANG    = "public/erlang_forecast.json"
+OUT_JSON_ERLANG_DO = "data_out/erlang_forecast.json"
+STAMP_JSON         = "public/last_update.json"
 
-# Paths salida
-DATAOUT_DIR      = "data_out"
-PUBLIC_DIR       = "public"
-CSV_OUT_PATH     = f"{DATAOUT_DIR}/predicciones.csv"
-JSON_OUT_PATH    = f"{DATAOUT_DIR}/predicciones.json"
-PUBLIC_JSON_PATH = f"{PUBLIC_DIR}/predicciones.json"
-ERLANG_JSON_OUT  = f"{DATAOUT_DIR}/erlang_forecast.json"
-ERLANG_JSON_PUB  = f"{PUBLIC_DIR}/erlang_forecast.json"
-LAST_UPDATE_JSON = f"{PUBLIC_DIR}/last_update.json"
+HOURS_AHEAD = 24 * 90  # 90 días
+FREQ        = "H"
 
-# Release (opcional si descargas modelo)
-RELEASE_MODELS_URL = os.environ.get("RELEASE_MODELS_URL", "")  # si lo usas, pon la URL en el action
-NEED_DOWNLOAD      = True  # si quieres descargar desde release; si ya está en repo, pon False
-MODEL_DIR          = "models"
-MODEL_FILE         = f"{MODEL_DIR}/modelo_llamadas_nn.keras"
+# Nombres como se entrenó
+TARGET_LLAMADAS = "recibidos"
+TARGET_TMO      = "tmo_seg"
 
-os.makedirs(DATAOUT_DIR, exist_ok=True)
-os.makedirs(PUBLIC_DIR, exist_ok=True)
-os.makedirs(MODEL_DIR, exist_ok=True)
+# Semillas si no hay estado
+DEFAULT_LL  = 100.0
+DEFAULT_TMO = 180.0
 
-# -------------------- Utils de features (mismo training) --------------------
-def read_data(path, hoja=None):
-    ext = os.path.splitext(path)[1].lower()
-    if ext in [".xlsx", ".xls"]:
-        return pd.read_excel(path, sheet_name=hoja)
-    if ext == ".csv":
-        return pd.read_csv(path)
-    raise ValueError("Formato no soportado (usa .xlsx/.xls o .csv)")
+# Parámetros de operación
+SLA_TARGET   = 0.90   # 90%
+ASA_TARGET_S = 22     # 22 segundos
+MAX_OCC      = 0.85   # 85% ocupación máxima
+SHRINKAGE    = 0.30   # legacy (se mantiene visible en JSON)
 
-def ensure_datetime(df, col_fecha, col_hora):
-    df["fecha_dt"] = pd.to_datetime(df[col_fecha], errors="coerce", dayfirst=True).dt.date
-    df["hora_str"] = df[col_hora].astype(str).str.slice(0,5)
-    df["ts"] = pd.to_datetime(df["fecha_dt"].astype(str)+" "+df["hora_str"], errors="coerce")
-    return df.dropna(subset=["ts"]).copy()
+# ===== Turno/productividad (tu realidad operativa) =====
+# Turno 10h, 1h colación, 2 breaks de 15m, 15% auxiliares
+SHIFT_HOURS = 10.0
+LUNCH_HOURS = 1.0
+BREAKS_MIN  = [15, 15]   # minutos
+AUX_RATE    = 0.15
 
+# ===== Erlang-A (abandono/paciencia) + restricciones adicionales =====
+USE_ERLANG_A       = True      # si False -> Erlang-C tradicional
+MEAN_PATIENCE_S    = 60.0      # paciencia media ~ exponencial
+ABANDON_MAX        = 0.06      # abandono máximo permitido (<= 6%)
+AWT_MAX_S          = 120.0     # tiempo medio de espera objetivo (segundos)
+USE_STRICT_OCC_CAP = True      # respetar tope de ocupación
+
+# ===== Pausa legal entre llamadas =====
+INTERCALL_GAP_S    = 10.0
+
+# ===== NUEVO: Absentismo mensual aplicado a AGENDADOS =====
+ABSENTEEISM_RATE   = 0.23      # 23% mensual (colchón adicional de dotación)
+
+# --------------------------------
+
+# ===== Erlang-C utils =====
+def erlang_c_prob_wait(N: int, A: float) -> float:
+    """Probabilidad de espera (Erlang C)."""
+    if A <= 0: return 0.0
+    if N <= 0: return 1.0
+    if A >= N: return 1.0
+    summ = 0.0
+    term = 1.0
+    for k in range(N):
+        if k > 0:
+            term *= A / k
+        summ += term
+    pn = term * (A / N) / (1 - A / N)
+    p_wait = pn / (summ + pn)
+    return float(p_wait)
+
+def service_level(A: float, N: int, AHT: float, T: float) -> float:
+    """SL = P(espera <= T) con Erlang-C (clásico, sin abandono)."""
+    if N <= 0 or A <= 0: return 0.0
+    if A >= N: return 0.0
+    pw = erlang_c_prob_wait(N, A)
+    return 1.0 - pw * np.exp(-(N - A) * (T / AHT))
+
+def erlang_c_awt(A: float, N: int, AHT: float) -> float:
+    """
+    AWT (espera media) aproximada para Erlang-C:
+    E[W] = Pw * AHT / (N - A), con Pw = Erlang-C.
+    """
+    if N <= 0 or A <= 0 or N <= A:
+        return float('inf')
+    pw = erlang_c_prob_wait(N, A)
+    return float(pw * (AHT / (N - A)))
+
+# ===== Erlang-A (abandono con paciencia exponencial) =====
+def erlang_a_metrics(A: float, N: int, aht_s: float, patience_s: float, T: float):
+    """
+    Aproximación práctica M/M/N+M (Erlang-A):
+      μ = 1/AHT, θ = 1/patience, r = μ*(N - A) (si N>A)
+    - SL_A (global) = (1 - Pw) + Pw * [ r/(r+θ) * (1 - exp(-(r+θ)*T)) ]
+    - Abandono (global) ≈ Pw * [ θ/(r+θ) ]
+    - AWT (medio) ≈ Pw * 1/(r+θ)   (espera media hasta servicio o abandono)
+    """
+    if N <= 0 or A <= 0:
+        return 0.0, 1.0, float('inf')
+    mu = 1.0 / max(aht_s, 1.0)
+    theta = 1.0 / max(patience_s, 1.0)
+    if N <= A:
+        return 0.0, 1.0, float('inf')
+    pw = erlang_c_prob_wait(N, A)  # % que espera (baseline C)
+    r = mu * (N - A)
+    rate = r + theta
+    sl_a = (1.0 - pw) + pw * (r / rate) * (1.0 - np.exp(-rate * T))
+    aban = pw * (theta / rate)
+    awt  = pw * (1.0 / rate)
+    # recortes numéricos
+    sl_a = float(min(max(sl_a, 0.0), 1.0))
+    aban = float(min(max(aban, 0.0), 1.0))
+    return sl_a, aban, float(awt)
+
+# ===== Turnos/productividad =====
+def scheduled_productivity_factor(shift_hours: float,
+                                  lunch_hours: float,
+                                  breaks_min: list,
+                                  aux_rate: float) -> float:
+    """factor de productividad programada = horas neto productivas / horas agendadas."""
+    breaks_h = sum(breaks_min) / 60.0
+    productive_hours = max(0.0, shift_hours - lunch_hours - breaks_h)  # p.ej. 10 - 1 - 0.5 = 8.5
+    net_productive_hours = productive_hours * (1.0 - aux_rate)         # 8.5 * 0.85 = 7.225
+    return (net_productive_hours / shift_hours) if shift_hours > 0 else 0.0
+
+# ===== Dimensionamiento =====
+def required_agents(calls_h: float, aht_s: float,
+                    sla_target: float, asa_s: float,
+                    max_occ: float, shrinkage: float,
+                    use_erlang_a: bool = USE_ERLANG_A,
+                    patience_s: float = MEAN_PATIENCE_S,
+                    abandon_max: float = ABANDON_MAX,
+                    awt_max_s: float = AWT_MAX_S,
+                    intercall_gap_s: float = INTERCALL_GAP_S,
+                    use_strict_occ_cap: bool = USE_STRICT_OCC_CAP) -> dict:
+    """
+    Devuelve N_productive y N_scheduled con métricas:
+      - A_erlangs, occupancy, service_level, abandon_rate, avg_wait_s
+    Cumple simultáneamente: SLA, ocupación, abandono y AWT máximo.
+    Suma la pausa legal entre llamadas al AHT efectivo.
+    """
+    calls_h = max(0.0, float(calls_h))
+    # AHT efectivo = AHT modelo + pausa legal entre llamadas
+    aht_eff = max(1.0, float(aht_s) + float(intercall_gap_s))
+
+    lamb = calls_h / 3600.0            # λ (1h)
+    A = lamb * aht_eff                  # Erlangs con AHT efectivo
+
+    # piso por ocupación
+    N_occ_min = int(np.ceil(A / max_occ)) if (use_strict_occ_cap and max_occ > 0) else int(np.ceil(A + 1))
+    # piso por estabilidad
+    N = max(N_occ_min, int(np.ceil(A)) + 1)
+
+    service = 0.0
+    aban = 1.0
+    awt = float('inf')
+
+    # subir hasta cumplir metas
+    for _ in range(3000):
+        if use_erlang_a:
+            service, aban, awt = erlang_a_metrics(A, N, aht_eff, patience_s, asa_s)
+        else:
+            service = service_level(A, N, aht_eff, asa_s)
+            aban = 0.0
+            awt  = erlang_c_awt(A, N, aht_eff)
+        occ = A / N if N > 0 else 1.0
+
+        cond_sla  = (service >= sla_target)
+        cond_occ  = (occ <= max_occ) if use_strict_occ_cap else True
+        cond_aban = (aban <= abandon_max) if use_erlang_a else True
+        cond_awt  = (awt <= awt_max_s)
+
+        if cond_sla and cond_occ and cond_aban and cond_awt:
+            break
+        N += 1
+
+    N_productive = int(N)
+    N_scheduled  = int(np.ceil(N_productive / (1.0 - shrinkage))) if (1.0 - shrinkage) > 0 else N_productive
+
+    return {
+        "A_erlangs": float(A),
+        "N_productive": N_productive,
+        "N_scheduled": N_scheduled,
+        "occupancy": float(A / N_productive) if N_productive > 0 else 0.0,
+        "service_level": float(service),
+        "abandon_rate": float(aban if use_erlang_a else 0.0),
+        "avg_wait_s": float(awt),
+        "model": "Erlang-A" if use_erlang_a else "Erlang-C"
+    }
+
+# ===== Features utils =====
 def add_time_features(df):
     df["dow"] = df["ts"].dt.dayofweek
+    df["doy"] = df["ts"].dt.dayofyear
+    df["week"] = df["ts"].dt.isocalendar().week.astype(int)
     df["month"] = df["ts"].dt.month
     df["hour"] = df["ts"].dt.hour
+    df["sin_hour"] = np.sin(2*np.pi*df["hour"]/24)
+    df["cos_hour"] = np.cos(2*np.pi*df["hour"]/24)
+    df["sin_dow"] = np.sin(2*np.pi*df["dow"]/7)
+    df["cos_dow"] = np.cos(2*np.pi*df["dow"]/7)
     return df
 
-def robust_baseline_by_dow_hour(df, y):
-    grp = df.groupby(["dow","hour"])[y].agg(["median"]).rename(columns={"median":"med"})
-    def mad(x):
-        m = np.median(x)
-        return np.median(np.abs(x - m))
-    grp["mad"] = df.groupby(["dow","hour"])[y].apply(mad).values
-    return grp
+def build_feature_matrix(df, target_col):
+    feats = [
+        "sin_hour","cos_hour","sin_dow","cos_dow",
+        "dow","month",
+        f"{target_col}_lag1", f"{target_col}_lag24",
+        f"{target_col}_ma24", f"{target_col}_ma168",
+        f"{target_col}_samehour_7d"
+    ]
+    return df[feats].copy()
 
-def detect_peaks(df, y, mad_k=3.5, min_consec=1):
-    base = robust_baseline_by_dow_hour(df, y)
-    df = df.merge(base, left_on=["dow","hour"], right_index=True, how="left")
-    df["upper_cap"] = df["med"] + mad_k * df["mad"].replace(0, df["mad"].median())
-    df["is_peak"] = (df[y] > df["upper_cap"]).astype(int)
-    if min_consec > 1:
-        df = df.sort_values("ts")
-        runs = (df["is_peak"].diff(1) != 0).cumsum()
-        sizes = df.groupby(runs)["is_peak"].transform("sum")
-        df["is_peak"] = np.where((df["is_peak"]==1) & (sizes>=min_consec), 1, 0)
-    return df
+def ensure_dirs():
+    os.makedirs("public", exist_ok=True)
+    os.makedirs("data_out", exist_ok=True)
+    os.makedirs(MODELS_DIR, exist_ok=True)
 
-def smooth_series(df, y, method="cap"):
-    # (igual que training) – si hay pico, recorta a upper_cap
-    df[y+"_smooth"] = np.where(df["is_peak"]==1,
-                               df["upper_cap"] if method=="cap" else df["med"],
-                               df[y])
-    return df
-
-def build_daily_matrices(df, target_col_smooth="recibidos_smooth"):
-    # Pivot a 24 columnas por hora + contexto del día
-    dfc = df.copy()
-    dfc["date"] = dfc["ts"].dt.date
-    piv = dfc.pivot_table(index="date", columns="hour", values=target_col_smooth, aggfunc="sum").fillna(0.0)
-    piv = piv.reindex(columns=range(24), fill_value=0.0)
-    piv.columns = [f"h{h:02d}" for h in piv.columns]
-
-    first = dfc.sort_values("ts").groupby("date").first().reset_index()
-    ctx = first[["date","dow","month"]].copy()
-    ctx["sin_month"] = np.sin(2*np.pi*ctx["month"]/12); ctx["cos_month"] = np.cos(2*np.pi*ctx["month"]/12)
-    ctx["sin_dow"]   = np.sin(2*np.pi*ctx["dow"]/7);    ctx["cos_dow"]   = np.cos(2*np.pi*ctx["dow"]/7)
-
-    day = ctx.merge(piv.reset_index(), on="date", how="inner")
-    h_cols = [c for c in day.columns if c.startswith("h")]
-    day["total"] = day[h_cols].sum(axis=1)
-
-    prof = day[h_cols].div(day["total"].replace(0, np.nan), axis=0).fillna(1.0/24.0)
-    prof.columns = [c.replace("h","p") for c in prof.columns]
-
-    day = pd.concat([day, prof], axis=1).sort_values("date").reset_index(drop=True)
-    return day, {"h_cols":h_cols, "p_cols":[c for c in day.columns if c.startswith("p")]}
-
-def make_sequences(day_df, seq_len=28):
-    # Devuelve secuencia de totales por día (para último tramo histórico)
-    day = day_df.copy().reset_index(drop=True)
-    totals = day["total"].values.astype(np.float32)
-    if len(totals) < seq_len:
-        raise ValueError(f"Histórico insuficiente: necesito >= {seq_len} días y hay {len(totals)}")
-    seq = totals[-seq_len:]  # última ventana
-    return seq.reshape(1, seq_len, 1).astype(np.float32)
-
-def ctx_for_date(d):
-    dow = d.weekday()
-    month = d.month
-    sin_month = np.sin(2*np.pi*month/12); cos_month = np.cos(2*np.pi*month/12)
-    sin_dow   = np.sin(2*np.pi*dow/7);    cos_dow   = np.cos(2*np.pi*dow/7)
-    return np.array([[dow, month, sin_month, cos_month, sin_dow, cos_dow]], dtype=np.float32)
-
-def hourly_from_heads(y_total, y_profile):
-    # y_total ya debe venir en escala LINEAL (expm1 aplicado)
-    return y_total * y_profile
-
-# -------------------- Descarga opcional desde Release --------------------
-def download_models_from_release():
-    if not NEED_DOWNLOAD or not RELEASE_MODELS_URL:
-        print("Saltando descarga de Release (NEED_DOWNLOAD=False o sin URL).")
-        return
-    print("Descargando modelos desde Release…")
-    r = requests.get(RELEASE_MODELS_URL, timeout=60)
-    r.raise_for_status()
-    # Acepta: .keras directo o zip con modelos
-    if RELEASE_MODELS_URL.endswith(".zip"):
-        with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
-            zf.extractall(".")
-    else:
-        with open(MODEL_FILE, "wb") as f:
-            f.write(r.content)
-    print("Modelos descargados.")
-
-# -------------------- Main --------------------
 def main():
-    download_models_from_release()
+    ensure_dirs()
 
-    if not os.path.exists(MODEL_FILE):
-        raise FileNotFoundError(f"No encuentro el modelo NN en {MODEL_FILE}")
+    # 1) Descargar modelos desde el último Release
+    print("Descargando modelos desde Release…")
+    p_ll = download_asset_from_latest(OWNER, REPO, ASSET_LLAMADAS, os.path.join(MODELS_DIR, ASSET_LLAMADAS))
+    p_tm = download_asset_from_latest(OWNER, REPO, ASSET_TMO,      os.path.join(MODELS_DIR, ASSET_TMO))
+    print("Modelos descargados:", p_ll, p_tm)
 
-    print("Cargando modelo Keras 3:", MODEL_FILE)
-    mdl = load_model(MODEL_FILE, compile=False)  # importante en Keras 3
+    # 2) Cargar modelos
+    mdl_ll = joblib.load(p_ll)
+    mdl_tmo = joblib.load(p_tm) if os.path.exists(p_tm) else None
 
-    print("Leyendo histórico:", RUTA_DATA)
-    df = read_data(RUTA_DATA, hoja=HOJA_EXCEL).copy()
-    if COL_LLAMADAS not in df.columns:
-        raise ValueError(f"Falta columna '{COL_LLAMADAS}'")
+    # 3) Timeline (UTC -> America/Santiago -> naive)
+    start = pd.Timestamp.utcnow().floor("H")
+    idx = pd.date_range(start, periods=HOURS_AHEAD, freq=FREQ, tz="UTC").tz_convert("America/Santiago").tz_localize(None)
+    df = pd.DataFrame({"ts": idx})
+    df = add_time_features(df)
 
-    # Mismo pipeline del entrenamiento
-    df = ensure_datetime(df, COL_FECHA, COL_HORA)
-    df = add_time_features(df).sort_values("ts").reset_index(drop=True)
+    # 4) Semillas
+    df["seed_ll"]  = DEFAULT_LL
+    df["seed_tmo"] = DEFAULT_TMO
 
-    # Suavizado CAP (como training). Ajusta K y método si cambiaste en el entreno
-    df_pk = detect_peaks(df.copy(), COL_LLAMADAS, mad_k=3.5, min_consec=1)
-    df_pk = smooth_series(df_pk, COL_LLAMADAS, method="cap")
-    df_pk = df_pk.rename(columns={COL_LLAMADAS+"_smooth": "recibidos_smooth"})
+    # ===== Llamadas (recibidos_*) =====
+    df[f"{TARGET_LLAMADAS}_lag1"]        = df["seed_ll"].shift(1)
+    df[f"{TARGET_LLAMADAS}_lag24"]       = df["seed_ll"].shift(24)
+    df[f"{TARGET_LLAMADAS}_ma24"]        = df["seed_ll"].rolling(24, min_periods=1).mean()
+    df[f"{TARGET_LLAMADAS}_ma168"]       = df["seed_ll"].rolling(24*7, min_periods=1).mean()
+    df[f"{TARGET_LLAMADAS}_samehour_7d"] = df["seed_ll"].shift(24*7)
 
-    # Día -> total + perfil
-    day, meta = build_daily_matrices(df_pk, "recibidos_smooth")
+    # ===== TMO (tmo_seg_*) =====
+    df[f"{TARGET_TMO}_lag1"]        = df["seed_tmo"].shift(1)
+    df[f"{TARGET_TMO}_lag24"]       = df["seed_tmo"].shift(24)
+    df[f"{TARGET_TMO}_ma24"]        = df["seed_tmo"].rolling(24, min_periods=1).mean()
+    df[f"{TARGET_TMO}_ma168"]       = df["seed_tmo"].rolling(24*7, min_periods=1).mean()
+    df[f"{TARGET_TMO}_samehour_7d"] = df["seed_tmo"].shift(24*7)
 
-    # Última ventana de 28 días (totales) para iniciar la proyección
-    seq = make_sequences(day, seq_len=SEQ_DIAS)  # shape (1, 28, 1)
+    # 5) Predicción modelos
+    X_ll  = build_feature_matrix(df, TARGET_LLAMADAS).fillna(method="bfill").fillna(method="ffill")
+    pred_ll = mdl_ll.predict(X_ll)
 
-    # Predicción iterativa día a día
-    start_date = day["date"].max() + dt.timedelta(days=1)
-    all_rows = []
+    if mdl_tmo is not None:
+        X_tmo = build_feature_matrix(df, TARGET_TMO).fillna(method="bfill").fillna(method="ffill")
+        pred_tmo = mdl_tmo.predict(X_tmo)
+    else:
+        pred_tmo = np.full(len(df), DEFAULT_TMO)
 
-    cur_seq = seq.copy()  # vamos desplazando la ventana
-    for d in range(HORIZON_DAYS):
-        date_d = start_date + dt.timedelta(days=d)
-        X_ctx  = ctx_for_date(date_d)   # shape (1, 6)
+    # Redondeo a enteros (como pediste)
+    pred_ll_int  = np.maximum(0, np.rint(pred_ll).astype(int))
+    pred_tmo_int = np.maximum(0, np.rint(pred_tmo).astype(int))
 
-        # y_total_pred viene en escala LOG1P en el training,
-        # así que aquí INVERSIÓN: expm1 para volver a llamadas reales
-        y_total_log, y_profile = mdl.predict({"seq_totales":cur_seq, "ctx":X_ctx}, verbose=0)
-        # Si tu modelo se guardó con total ya en lineal, comenta la línea de expm1:
-        y_total = np.expm1(y_total_log).clip(min=0.0).reshape(-1)   # -> (1,)
-        y_prof  = y_profile.reshape(-1)                             # -> (24,)
+    out = pd.DataFrame({
+        "ts": df["ts"].dt.strftime("%Y-%m-%d %H:%M:%S"),
+        "pred_llamadas": pred_ll_int,
+        "pred_tmo_seg": pred_tmo_int
+    })
 
-        # Asegurar perfil válido
-        if not np.isfinite(y_prof).all() or y_prof.sum() <= 0:
-            y_prof = np.ones(24, dtype=np.float32) / 24.0
-        else:
-            y_prof = y_prof / y_prof.sum()
+    # 6) Guardar CSV y JSONs de predicciones
+    out.to_csv(OUT_CSV, index=False)
+    payload = out.to_dict(orient="records")
+    with open(OUT_JSON_PUBLIC, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    with open(OUT_JSON_DATAOUT, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
 
-        hourly = (y_total[0] * y_prof).astype(float)  # 24 horas
+    # ===== Productividad programada y shrinkage derivado =====
+    prod_factor = scheduled_productivity_factor(
+        SHIFT_HOURS, LUNCH_HOURS, BREAKS_MIN, AUX_RATE
+    )
+    derived_shrinkage = max(0.0, min(1.0, 1.0 - prod_factor))
+    # ===== NUEVO: shrinkage efectivo con absentismo =====
+    effective_shrinkage = 1.0 - ( (1.0 - derived_shrinkage) * (1.0 - ABSENTEEISM_RATE) )
+    print(f"[Turno] productividad={prod_factor:.4f} -> shrinkage_derivado={derived_shrinkage:.4f} -> absentismo={ABSENTEEISM_RATE:.2f} -> shrinkage_efectivo={effective_shrinkage:.4f}")
 
-        # Guardar filas por hora
-        for h in range(24):
-            all_rows.append({
-                "fecha": date_d.strftime("%Y-%m-%d"),
-                "hora": f"{h:02d}:00",
-                "llamadas": float(hourly[h])
-            })
+    # 7) Calcular Erlang (C/A) y agentes
+    erlang_rows = []
+    for row in payload:
+        calls_h = int(row["pred_llamadas"])
+        aht_s   = int(row["pred_tmo_seg"])
+        dims = required_agents(
+            calls_h=calls_h,
+            aht_s=aht_s,
+            sla_target=SLA_TARGET,
+            asa_s=ASA_TARGET_S,
+            max_occ=MAX_OCC,
+            shrinkage=effective_shrinkage,   # <<< usamos shrinkage EFECTIVO (turno + absentismo)
+            use_erlang_a=USE_ERLANG_A,
+            patience_s=MEAN_PATIENCE_S,
+            abandon_max=ABANDON_MAX,
+            awt_max_s=AWT_MAX_S,
+            intercall_gap_s=INTERCALL_GAP_S,
+            use_strict_occ_cap=USE_STRICT_OCC_CAP
+        )
+        erlang_rows.append({
+            "ts": row["ts"],
+            "llamadas": int(calls_h),
+            "tmo_seg": int(aht_s),
+            "erlangs": round(dims["A_erlangs"], 4),
+            "agentes_productivos": int(dims["N_productive"]),
+            "agentes_agendados": int(dims["N_scheduled"]),
+            "occupancy": round(dims["occupancy"], 4),
+            "service_level": round(dims["service_level"], 4),
+            "abandon_rate": round(dims["abandon_rate"], 4),
+            "avg_wait_s": round(dims["avg_wait_s"], 2),
+            "model": dims["model"],
+            "params": {
+                "SLA_TARGET": SLA_TARGET,
+                "ASA_TARGET_S": ASA_TARGET_S,
+                "MAX_OCC": MAX_OCC,
+                "SHIFT_HOURS": SHIFT_HOURS,
+                "LUNCH_HOURS": LUNCH_HOURS,
+                "BREAKS_MIN": BREAKS_MIN,
+                "AUX_RATE": AUX_RATE,
+                "DERIVED_SHRINKAGE": round(derived_shrinkage, 4),
+                "PRODUCTIVITY_FACTOR": round(prod_factor, 4),
+                "USE_ERLANG_A": USE_ERLANG_A,
+                "MEAN_PATIENCE_S": MEAN_PATIENCE_S,
+                "ABANDON_MAX": ABANDON_MAX,
+                "AWT_MAX_S": AWT_MAX_S,
+                "INTERCALL_GAP_S": INTERCALL_GAP_S,
+                "ABSENTEEISM_RATE": ABSENTEEISM_RATE,
+                "EFFECTIVE_SHRINKAGE": round(effective_shrinkage, 4)
+            }
+        })
 
-        # Desplazar ventana de totales (agregar y_total del día recién predicho)
-        next_total = y_total[0]
-        cur_seq = np.concatenate([cur_seq[:,1:,:], np.array([[[next_total]]], dtype=np.float32)], axis=1)
+    with open(OUT_JSON_ERLANG, "w", encoding="utf-8") as f:
+        json.dump(erlang_rows, f, ensure_ascii=False, indent=2)
+    with open(OUT_JSON_ERLANG_DO, "w", encoding="utf-8") as f:
+        json.dump(erlang_rows, f, ensure_ascii=False, indent=2)
 
-    # Exportar
-    pred_df = pd.DataFrame(all_rows, columns=["fecha","hora","llamadas"])
-    # Redondeo opcional (negocios suelen querer enteros)
-    pred_df["llamadas"] = pred_df["llamadas"].clip(lower=0).round(0)
-
-    pred_df.to_csv(CSV_OUT_PATH, index=False)
-    pred_df.to_json(JSON_OUT_PATH, orient="records", force_ascii=False)
-
-    # duplicado a public/
-    pred_df.to_json(PUBLIC_JSON_PATH, orient="records", force_ascii=False)
-
-    # erlang (si no lo usas ahora, igual dejamos un stub coherente)
-    erlang_stub = {
-        "version": "nn_v1",
-        "generated_at": dt.datetime.utcnow().isoformat() + "Z",
-        "note": "Erlang no calculado en esta versión; usando 0 por defecto."
+    # 8) Timestamp para forzar actualización
+    stamp = {
+        "generated_at_utc": pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "horizon_hours": HOURS_AHEAD,
+        "records": len(out)
     }
-    with open(ERLANG_JSON_OUT, "w", encoding="utf-8") as f:
-        json.dump(erlang_stub, f, ensure_ascii=False)
-    with open(ERLANG_JSON_PUB, "w", encoding="utf-8") as f:
-        json.dump(erlang_stub, f, ensure_ascii=False)
+    with open(STAMP_JSON, "w", encoding="utf-8") as f:
+        json.dump(stamp, f, ensure_ascii=False, indent=2)
 
-    # last_update
-    last_update = {"updated_at_utc": dt.datetime.utcnow().isoformat() + "Z"}
-    with open(LAST_UPDATE_JSON, "w", encoding="utf-8") as f:
-        json.dump(last_update, f, ensure_ascii=False)
-
-    print(f"OK -> {CSV_OUT_PATH}  |  {PUBLIC_JSON_PATH}")
+    print(f"OK -> {OUT_CSV}")
+    print(f"OK -> {OUT_JSON_PUBLIC}")
+    print(f"OK -> {OUT_JSON_DATAOUT}")
+    print(f"OK -> {OUT_JSON_ERLANG}")
+    print(f"OK -> {OUT_JSON_ERLANG_DO}")
+    print(f"OK -> {STAMP_JSON}")
 
 if __name__ == "__main__":
     main()
+
 
