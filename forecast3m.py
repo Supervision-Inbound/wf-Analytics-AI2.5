@@ -25,7 +25,8 @@ OUT_JSON_ERLANG    = "public/erlang_forecast.json"
 OUT_JSON_ERLANG_DO = "data_out/erlang_forecast.json"
 STAMP_JSON         = "public/last_update.json"
 
-HOURS_AHEAD = 24 * 90  # 90 días
+# (HOURS_AHEAD ya no se usa; mantenido para compatibilidad si otros scripts lo leen)
+HOURS_AHEAD = 24 * 90
 FREQ        = "H"
 
 # Nombres como se entrenó
@@ -101,10 +102,10 @@ def erlang_c_awt(A: float, N: int, AHT: float) -> float:
 def erlang_a_metrics(A: float, N: int, aht_s: float, patience_s: float, T: float):
     """
     Aproximación práctica M/M/N+M (Erlang-A):
-      μ = 1/AHT, θ = 1/patience, r = μ*(N - A) (si N>A)
+      μ = 1/AHT, θ = 1/paciencia, r = μ*(N - A) (si N>A)
     - SL_A (global) = (1 - Pw) + Pw * [ r/(r+θ) * (1 - exp(-(r+θ)*T)) ]
     - Abandono (global) ≈ Pw * [ θ/(r+θ) ]
-    - AWT (medio) ≈ Pw * 1/(r+θ)   (espera media hasta servicio o abandono)
+    - AWT (medio) ≈ Pw * 1/(r+θ)
     """
     if N <= 0 or A <= 0:
         return 0.0, 1.0, float('inf')
@@ -227,6 +228,30 @@ def ensure_dirs():
     os.makedirs("data_out", exist_ok=True)
     os.makedirs(MODELS_DIR, exist_ok=True)
 
+def build_month_window_idx():
+    """
+    Devuelve un DatetimeIndex (naive, hora a hora) desde el 1 del mes anterior
+    hasta el último día del mes siguiente a las 23:00, en horario local America/Santiago.
+    """
+    tz = "America/Santiago"
+    now_local = pd.Timestamp.now(tz=tz).floor("H")
+
+    current_period = now_local.to_period("M")          # mes actual
+    prev_period    = current_period - 1                # mes anterior
+    next_period    = current_period + 1                # mes siguiente
+
+    # Inicio: 1 del mes anterior 00:00
+    start = pd.Timestamp(year=prev_period.year, month=prev_period.month, day=1,
+                         hour=0, minute=0, second=0, tz=tz)
+
+    # Fin: último día del mes siguiente 23:00
+    last_day_next = pd.Timestamp(year=next_period.year, month=next_period.month, day=1, tz=tz) + pd.offsets.MonthEnd(1)
+    end = last_day_next.replace(hour=23, minute=0, second=0, microsecond=0)
+
+    # Generar rango horario en local y devolver naive (sin tz) manteniendo las horas locales
+    idx = pd.date_range(start=start, end=end, freq="H", tz=tz)
+    return idx.tz_localize(None)
+
 def main():
     ensure_dirs()
 
@@ -240,9 +265,8 @@ def main():
     mdl_ll = joblib.load(p_ll)
     mdl_tmo = joblib.load(p_tm) if os.path.exists(p_tm) else None
 
-    # 3) Timeline (UTC -> America/Santiago -> naive)
-    start = pd.Timestamp.utcnow().floor("H")
-    idx = pd.date_range(start, periods=HOURS_AHEAD, freq=FREQ, tz="UTC").tz_convert("America/Santiago").tz_localize(None)
+    # 3) Timeline: del 1 del mes anterior al fin del mes siguiente (horas locales)
+    idx = build_month_window_idx()
     df = pd.DataFrame({"ts": idx})
     df = add_time_features(df)
 
@@ -358,9 +382,10 @@ def main():
         json.dump(erlang_rows, f, ensure_ascii=False, indent=2)
 
     # 8) Timestamp para forzar actualización
+    horizon_hours = len(idx)  # horizonte real (del 1 mes anterior al fin del mes siguiente)
     stamp = {
         "generated_at_utc": pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "horizon_hours": HOURS_AHEAD,
+        "horizon_hours": int(horizon_hours),
         "records": len(out)
     }
     with open(STAMP_JSON, "w", encoding="utf-8") as f:
