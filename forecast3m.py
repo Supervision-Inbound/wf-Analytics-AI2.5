@@ -1,12 +1,13 @@
 # forecast3m.py
 # Inferencia conjunta (recibidos + tmo) + dimensionamiento con Erlang-C/A
-# Descarga modelos desde el último Release y publica JSON/CSV listos para front.
-# Novedades:
+# Descarga modelos desde el último Release y publica JSON/CSV/JSON históricos listos para front.
+# Novedades (versión con DEBUG prints):
 #  - Horizonte: 1er día del mes anterior -> último día del mes siguiente (hora a hora, America/Santiago)
 #  - Distribución diaria→horaria: primero calcula total diario y luego reparte por pesos (perfil por DOW)
 #  - JSON histórico: mueve registros fuera de la ventana actual a public/prediccion_historica.json
 #  - Erlang-A/C con pausa legal, ocupación máxima, abandono y AWT objetivo
 #  - Redondeo a enteros (llamadas, TMO, agentes)
+#  - DEBUG: imprime muestras y métricas para verificar cambios
 
 import os
 import json
@@ -71,6 +72,9 @@ INTERCALL_GAP_S    = 10.0
 
 # ===== NUEVO: Absentismo mensual aplicado a AGENDADOS =====
 ABSENTEEISM_RATE   = 0.23      # 23% mensual (colchón adicional de dotación)
+
+# ===== DEBUG =====
+DEBUG = True   # Pon en False si no quieres ver los prints en consola
 
 # --------------------------------
 def ensure_dirs():
@@ -280,7 +284,7 @@ def compute_hourly_weights_by_dow(df_ts_hours: pd.DataFrame, raw_hourly_calls: n
 
 def redistribute_daily_to_hourly(df_ts_hours: pd.DataFrame,
                                  raw_hourly_calls: np.ndarray,
-                                 weights_by_dow: pd.DataFrame) -> np.ndarray:
+                                 weights_by_dow: np.ndarray) -> np.ndarray:
     """
     Para cada día:
       - calcula el total diario a partir de las predicciones crudas (robusto a outliers diarios),
@@ -323,7 +327,6 @@ def dedup_by_ts(records):
     seen = {}
     for r in records:
         seen[r["ts"]] = r
-    # ordenar por ts asc para consistencia
     out = [seen[k] for k in sorted(seen.keys())]
     return out
 
@@ -374,10 +377,41 @@ def main():
         pred_tmo_raw = np.full(len(df), DEFAULT_TMO, dtype=float)
 
     # ====== Distribución diaria → horaria por pesos (perfil por DOW) ======
-    # 1) Calcula pesos por DOW y hora a partir del patrón crudo del propio modelo
     weights_by_dow = compute_hourly_weights_by_dow(df, pred_ll_raw)
-    # 2) Redistribuye: para cada día, toma total diario crudo y reparte por pesos
     pred_ll_redist = redistribute_daily_to_hourly(df, pred_ll_raw, weights_by_dow)
+
+    # ---- DEBUG BLOCK: verificación de predicciones antes de guardar ----
+    if DEBUG:
+        print("\n===== DEBUG: Ventana temporal =====")
+        print(f"Inicio ventana: {df['ts'].min()}  |  Fin ventana: {df['ts'].max()}")
+        print(f"Horas en ventana: {len(df)}")
+
+        # Preparar un preview de 12 filas (crudo vs redistribuido)
+        debug_preview = pd.DataFrame({
+            "ts": df["ts"].astype(str),
+            "dow": df["dow"],
+            "hour": df["hour"],
+            "raw_ll": np.round(pred_ll_raw, 2),
+            "redist_ll": np.round(pred_ll_redist, 2),
+            "tmo_raw": np.round(pred_tmo_raw, 2),
+        }).head(12)
+        print("\n===== DEBUG: Predicciones (primeras 12 filas) =====")
+        print(debug_preview.to_string(index=False))
+
+        # Totales diarios (primer día de la ventana)
+        first_day = df["ts"].dt.date.min()
+        mask_day = df["ts"].dt.date == first_day
+        total_raw_day1 = float(np.sum(pred_ll_raw[mask_day]))
+        total_red_day1 = float(np.sum(pred_ll_redist[mask_day]))
+        print("\n===== DEBUG: Totales día 1 (deben ser iguales) =====")
+        print(f"Fecha: {first_day} | Total crudo: {round(total_raw_day1,2)} | Total redistribuido: {round(total_red_day1,2)}")
+
+        # Métricas globales
+        print("\n===== DEBUG: Métricas globales =====")
+        print(f"Llamadas crudo -> min:{np.min(pred_ll_raw):.2f}  max:{np.max(pred_ll_raw):.2f}  mean:{np.mean(pred_ll_raw):.2f}")
+        print(f"Llamadas redist-> min:{np.min(pred_ll_redist):.2f}  max:{np.max(pred_ll_redist):.2f}  mean:{np.mean(pred_ll_redist):.2f}")
+        print(f"TMO seg       -> min:{np.min(pred_tmo_raw):.2f}  max:{np.max(pred_tmo_raw):.2f}  mean:{np.mean(pred_tmo_raw):.2f}")
+        print("===== FIN DEBUG PRED =====\n")
 
     # Redondeo a enteros (como pediste)
     pred_ll_int  = np.maximum(0, np.rint(pred_ll_redist).astype(int))
@@ -397,42 +431,35 @@ def main():
     write_json(OUT_JSON_DATAOUT, payload_current)
 
     # ======= JSON Histórico: mover lo que sale de la ventana =======
-    # Cargar predicciones previas (si existen) y extraer lo que quedó fuera del nuevo inicio
-    prev_public = try_read_json(OUT_JSON_PUBLIC)  # después de escribir ya es el "nuevo", pero por compat mantenemos lectura
+    prev_public = try_read_json(OUT_JSON_PUBLIC)  # (después de escribir ya es el "nuevo")
     prev_dataout = try_read_json(OUT_JSON_DATAOUT)
-    # Cargar histórico existente
     hist_records = try_read_json(HIST_JSON_PUBLIC)
 
-    # Determinar inicio actual (string) para comparar
     start_str = pd.to_datetime(idx.min()).strftime("%Y-%m-%d %H:%M:%S")
-
-    # Si existiera un predicciones.json previo de otra ejecución (en data_out suele quedar copia)
-    # tomamos el data_out anterior si es más "antiguo" que el public actual (heurística)
     prev_candidates = prev_dataout if len(prev_dataout) > len(prev_public) else prev_public
-
-    # Filtrar los que quedan fuera del inicio
     prev_old = [r for r in prev_candidates if r.get("ts","") < start_str]
 
     if prev_old:
-        # Mezclar con histórico actual y deduplicar por ts
-        hist_merged = hist_records + prev_old
-        hist_merged = dedup_by_ts(hist_merged)
+        hist_merged = dedup_by_ts(hist_records + prev_old)
         write_json(HIST_JSON_PUBLIC, hist_merged)
-        print(f"[Hist] Movidos {len(prev_old)} registros antiguos a {HIST_JSON_PUBLIC}")
+        if DEBUG:
+            print(f"[Hist] Movidos {len(prev_old)} registros antiguos a {HIST_JSON_PUBLIC}")
     else:
-        # si no hay previos, conservar histórico tal cual
         if not os.path.exists(HIST_JSON_PUBLIC):
             write_json(HIST_JSON_PUBLIC, [])
-        print("[Hist] Sin cambios en histórico")
+        if DEBUG:
+            print("[Hist] Sin cambios en histórico")
 
     # ===== Productividad programada y shrinkage derivado =====
     prod_factor = scheduled_productivity_factor(
         SHIFT_HOURS, LUNCH_HOURS, BREAKS_MIN, AUX_RATE
     )
     derived_shrinkage = max(0.0, min(1.0, 1.0 - prod_factor))
-    # ===== NUEVO: shrinkage efectivo con absentismo =====
     effective_shrinkage = 1.0 - ( (1.0 - derived_shrinkage) * (1.0 - ABSENTEEISM_RATE) )
-    print(f"[Turno] productividad={prod_factor:.4f} -> shrinkage_derivado={derived_shrinkage:.4f} -> absentismo={ABSENTEEISM_RATE:.2f} -> shrinkage_efectivo={effective_shrinkage:.4f}")
+
+    if DEBUG:
+        print(f"[Turno] productividad={prod_factor:.4f} -> shrinkage_derivado={derived_shrinkage:.4f} "
+              f"-> absentismo={ABSENTEEISM_RATE:.2f} -> shrinkage_efectivo={effective_shrinkage:.4f}")
 
     # 7) Calcular Erlang (C/A) y agentes
     erlang_rows = []
@@ -489,7 +516,7 @@ def main():
     write_json(OUT_JSON_ERLANG_DO, erlang_rows)
 
     # 8) Timestamp para forzar actualización
-    horizon_hours = len(idx)  # horizonte real (del 1 mes anterior al fin del mes siguiente)
+    horizon_hours = len(idx)
     stamp = {
         "generated_at_utc": pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "horizon_hours": int(horizon_hours),
@@ -497,14 +524,18 @@ def main():
     }
     write_json(STAMP_JSON, stamp)
 
-    print(f"OK -> {OUT_CSV}")
-    print(f"OK -> {OUT_JSON_PUBLIC}")
-    print(f"OK -> {OUT_JSON_DATAOUT}")
-    print(f"OK -> {OUT_JSON_ERLANG}")
-    print(f"OK -> {OUT_JSON_ERLANG_DO}")
-    print(f"OK -> {STAMP_JSON}")
-    print(f"OK -> {HIST_JSON_PUBLIC}")
+    # ---- DEBUG: resumen final de escritura ----
+    if DEBUG:
+        print("\n===== DEBUG: Resumen de archivos escritos =====")
+        print(f"CSV     -> {OUT_CSV}           (rows: {len(out)})")
+        print(f"JSON    -> {OUT_JSON_PUBLIC}   (rows: {len(out)})")
+        print(f"JSON cp -> {OUT_JSON_DATAOUT}  (rows: {len(out)})")
+        print(f"ERLANG  -> {OUT_JSON_ERLANG}   (rows: {len(erlang_rows)})")
+        print(f"ERLANG2 -> {OUT_JSON_ERLANG_DO}(rows: {len(erlang_rows)})")
+        print(f"STAMP   -> {STAMP_JSON}")
+        print(f"HIST    -> {HIST_JSON_PUBLIC}  (exists: {os.path.exists(HIST_JSON_PUBLIC)})")
+
+    print("\nOK - Inferencia completada.")
 
 if __name__ == "__main__":
     main()
-
